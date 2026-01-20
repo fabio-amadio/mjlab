@@ -47,6 +47,8 @@ dependencies = [
   "tensorboard>=2.20.0",
   "onnxscript>=0.5.4",
   "wandb>=0.22.3",
+  "onnxruntime>=1.23.2",
+  "matplotlib>=3.10.8",
 ]
 
 [project.urls]
