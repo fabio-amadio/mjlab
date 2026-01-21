@@ -71,6 +71,7 @@ class NativeMujocoViewer(BaseViewer):
     self._yrange: dict[str, tuple[float, float]] = {}  # Per-term y-range.
     self._show_plots: bool = True
     self._show_debug_vis: bool = True
+    self._show_all_envs: bool = False
     self._plot_cfg = plot_cfg or PlotCfg()
 
     self.env_idx = self.cfg.env_idx
@@ -175,7 +176,9 @@ class NativeMujocoViewer(BaseViewer):
 
       v.user_scn.ngeom = 0
       if self._show_debug_vis and hasattr(self.env.unwrapped, "update_visualizers"):
-        visualizer = MujocoNativeDebugVisualizer(v.user_scn, self.mjm, self.env_idx)
+        visualizer = MujocoNativeDebugVisualizer(
+          v.user_scn, self.mjm, self.env_idx, self._show_all_envs
+        )
         self.env.unwrapped.update_visualizers(visualizer)
 
       if self.vd is not None:
@@ -227,6 +230,7 @@ class NativeMujocoViewer(BaseViewer):
   def _safe_key_callback(self, key: int) -> None:
     """Runs on MuJoCo viewer thread; must not touch env/sim directly."""
     from mjlab.viewer.native.keys import (
+      KEY_A,
       KEY_COMMA,
       KEY_ENTER,
       KEY_EQUAL,
@@ -253,6 +257,8 @@ class NativeMujocoViewer(BaseViewer):
       self.request_action("TOGGLE_PLOTS", "TOGGLE_PLOTS")
     elif key == KEY_R:
       self.request_action("TOGGLE_DEBUG_VIS", "TOGGLE_DEBUG_VIS")
+    elif key == KEY_A:
+      self.request_action("TOGGLE_SHOW_ALL_ENVS", "TOGGLE_SHOW_ALL_ENVS")
 
     if self.user_key_callback:
       try:
@@ -284,6 +290,13 @@ class NativeMujocoViewer(BaseViewer):
           self._show_debug_vis = not self._show_debug_vis
           self.log(
             f"[INFO] Debug visualization {'shown' if self._show_debug_vis else 'hidden'}",
+            VerbosityLevel.INFO,
+          )
+          return True
+        elif payload == "TOGGLE_SHOW_ALL_ENVS":
+          self._show_all_envs = not self._show_all_envs
+          self.log(
+            f"[INFO] Show all envs {'enabled' if self._show_all_envs else 'disabled'}",
             VerbosityLevel.INFO,
           )
           return True
