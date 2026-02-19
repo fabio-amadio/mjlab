@@ -564,6 +564,19 @@ def randomize_pd_gains(
 
   asset: Entity = env.scene[asset_cfg.name]
 
+  # For some model fields (not declared in EventManager domain-randomization
+  # fields), the bridge may expose an expanded view with shared storage along the
+  # env dimension (stride 0). Expand once on first use so per-env randomization
+  # writes are independent.
+  if env.num_envs > 1:
+    fields_to_expand: list[str] = []
+    if env.sim.wp_model.actuator_gainprm.shape[0] == 1:
+      fields_to_expand.append("actuator_gainprm")
+    if env.sim.wp_model.actuator_biasprm.shape[0] == 1:
+      fields_to_expand.append("actuator_biasprm")
+    if fields_to_expand:
+      env.sim.expand_model_fields(tuple(fields_to_expand))
+
   if env_ids is None:
     env_ids = torch.arange(env.num_envs, device=env.device, dtype=torch.int)
   else:
