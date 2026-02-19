@@ -1,0 +1,162 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, cast
+
+import torch
+
+from mjlab.sensor import ContactSensor
+from mjlab.utils.lab_api.math import (
+  euler_xyz_from_quat,
+  matrix_from_quat,
+  quat_apply_inverse,
+  subtract_frame_transforms,
+)
+
+from .commands import MotionCommand
+
+if TYPE_CHECKING:
+  from mjlab.envs import ManagerBasedRlEnv
+
+
+def _body_indices_by_name(
+  all_body_names: tuple[str, ...], selected_body_names: tuple[str, ...]
+) -> list[int]:
+  return [all_body_names.index(name) for name in selected_body_names]
+
+
+def motion_anchor_pos_b(env: ManagerBasedRlEnv, command_name: str) -> torch.Tensor:
+  command = cast(MotionCommand, env.command_manager.get_term(command_name))
+
+  pos, _ = subtract_frame_transforms(
+    command.robot_anchor_pos_w,
+    command.robot_anchor_quat_w,
+    command.anchor_pos_w,
+    command.anchor_quat_w,
+  )
+
+  return pos.view(env.num_envs, -1)
+
+
+def motion_anchor_ori_b(env: ManagerBasedRlEnv, command_name: str) -> torch.Tensor:
+  command = cast(MotionCommand, env.command_manager.get_term(command_name))
+
+  _, ori = subtract_frame_transforms(
+    command.robot_anchor_pos_w,
+    command.robot_anchor_quat_w,
+    command.anchor_pos_w,
+    command.anchor_quat_w,
+  )
+  mat = matrix_from_quat(ori)
+  return mat[..., :2].reshape(mat.shape[0], -1)
+
+
+def robot_body_pos_b(env: ManagerBasedRlEnv, command_name: str) -> torch.Tensor:
+  command = cast(MotionCommand, env.command_manager.get_term(command_name))
+
+  num_bodies = len(command.cfg.body_names)
+  pos_b, _ = subtract_frame_transforms(
+    command.robot_anchor_pos_w[:, None, :].repeat(1, num_bodies, 1),
+    command.robot_anchor_quat_w[:, None, :].repeat(1, num_bodies, 1),
+    command.robot_body_pos_w,
+    command.robot_body_quat_w,
+  )
+
+  return pos_b.view(env.num_envs, -1)
+
+
+def robot_anchor_height(env: ManagerBasedRlEnv, command_name: str) -> torch.Tensor:
+  command = cast(MotionCommand, env.command_manager.get_term(command_name))
+  return command.robot_anchor_pos_w[:, 2:3]
+
+
+def robot_anchor_pos(env: ManagerBasedRlEnv, command_name: str) -> torch.Tensor:
+  command = cast(MotionCommand, env.command_manager.get_term(command_name))
+  return command.robot_anchor_pos_w
+
+
+def robot_anchor_rpy(env: ManagerBasedRlEnv, command_name: str) -> torch.Tensor:
+  command = cast(MotionCommand, env.command_manager.get_term(command_name))
+  roll, pitch, yaw = euler_xyz_from_quat(command.robot_anchor_quat_w)
+  return torch.stack((roll, pitch, yaw), dim=-1)
+
+
+def robot_key_body_pos_b(
+  env: ManagerBasedRlEnv, command_name: str, key_body_names: tuple[str, ...]
+) -> torch.Tensor:
+  command = cast(MotionCommand, env.command_manager.get_term(command_name))
+  key_body_indices = _body_indices_by_name(command.cfg.body_names, key_body_names)
+
+  key_body_pos_w = command.robot_body_pos_w[:, key_body_indices, :]
+  robot_anchor_pos_w = command.robot_anchor_pos_w[:, None, :]
+  robot_anchor_quat_w = command.robot_anchor_quat_w[:, None, :].expand(
+    -1, len(key_body_indices), -1
+  )
+  key_body_pos_b = quat_apply_inverse(robot_anchor_quat_w, key_body_pos_w - robot_anchor_pos_w)
+  return key_body_pos_b.reshape(env.num_envs, -1)
+
+
+def feet_contact_mask(env: ManagerBasedRlEnv, sensor_name: str) -> torch.Tensor:
+  sensor: ContactSensor = env.scene[sensor_name]
+  sensor_data = sensor.data
+  assert sensor_data.found is not None
+  return (sensor_data.found > 0).float()
+
+
+def robot_body_ori_b(env: ManagerBasedRlEnv, command_name: str) -> torch.Tensor:
+  command = cast(MotionCommand, env.command_manager.get_term(command_name))
+
+  num_bodies = len(command.cfg.body_names)
+  _, ori_b = subtract_frame_transforms(
+    command.robot_anchor_pos_w[:, None, :].repeat(1, num_bodies, 1),
+    command.robot_anchor_quat_w[:, None, :].repeat(1, num_bodies, 1),
+    command.robot_body_pos_w,
+    command.robot_body_quat_w,
+  )
+  mat = matrix_from_quat(ori_b)
+  return mat[..., :2].reshape(mat.shape[0], -1)
+
+
+def motion_teacher_reference_obs(
+  env: ManagerBasedRlEnv,
+  command_name: str,
+  step_offsets: tuple[int, ...],
+  key_body_names: tuple[str, ...],
+) -> torch.Tensor:
+  """Future reference stack for CLAMP Stage-A teacher policy."""
+  command = cast(MotionCommand, env.command_manager.get_term(command_name))
+  frames = command.query_motion_frames(step_offsets)
+
+  num_envs = env.num_envs
+  num_steps = len(step_offsets)
+  key_body_indices = _body_indices_by_name(command.cfg.body_names, key_body_names)
+
+  root_pos = frames.anchor_pos_w
+  root_quat = frames.anchor_quat_w
+  root_lin_vel_b = quat_apply_inverse(root_quat, frames.anchor_lin_vel_w)
+  root_ang_vel_b = quat_apply_inverse(root_quat, frames.anchor_ang_vel_w)
+
+  key_body_pos = frames.body_pos_w[:, :, key_body_indices, :] - root_pos[:, :, None, :]
+  root_quat_expand = root_quat[:, :, None, :].expand(-1, -1, len(key_body_indices), -1)
+  key_body_pos_b = quat_apply_inverse(root_quat_expand, key_body_pos).reshape(
+    num_envs, num_steps, -1
+  )
+
+  roll, pitch, yaw = euler_xyz_from_quat(root_quat.reshape(-1, 4))
+  roll = roll.reshape(num_envs, num_steps, 1)
+  pitch = pitch.reshape(num_envs, num_steps, 1)
+  yaw = yaw.reshape(num_envs, num_steps, 1)
+
+  obs = torch.cat(
+    (
+      root_pos[..., :3],  # root position (x, y, z)
+      roll,
+      pitch,
+      yaw,
+      root_lin_vel_b,
+      root_ang_vel_b[..., 2:3],  # yaw rate
+      frames.joint_pos,
+      key_body_pos_b,
+    ),
+    dim=-1,
+  )
+  return obs.reshape(num_envs, -1)
