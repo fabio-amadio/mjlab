@@ -255,6 +255,7 @@ def feet_slip(
   mean_slip_vel = torch.sum(vel_xy_norm * in_contact) / torch.clamp(
     num_in_contact, min=1
   )
+  env.extras.setdefault("log", {})
   env.extras["log"]["Metrics/slip_velocity_mean"] = mean_slip_vel
   return cost
 
@@ -276,6 +277,7 @@ def soft_landing(
   cost = torch.sum(landing_impact, dim=1)  # [B]
   num_landings = torch.sum(first_contact.float())
   mean_landing_force = torch.sum(landing_impact) / torch.clamp(num_landings, min=1)
+  env.extras.setdefault("log", {})
   env.extras["log"]["Metrics/landing_force_mean"] = mean_landing_force
   if command_name is not None:
     command = env.command_manager.get_command(command_name)

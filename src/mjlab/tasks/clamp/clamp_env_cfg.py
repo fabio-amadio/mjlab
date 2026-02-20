@@ -17,6 +17,7 @@ from mjlab.scene import SceneCfg
 from mjlab.sim import MujocoCfg, SimulationCfg
 from mjlab.tasks.clamp import mdp
 from mjlab.tasks.clamp.mdp import MotionCommandCfg
+from mjlab.tasks.velocity import mdp as velocity_mdp
 from mjlab.terrains import TerrainImporterCfg
 from mjlab.utils.noise import UniformNoiseCfg as Unoise
 from mjlab.viewer import ViewerConfig
@@ -351,67 +352,37 @@ def make_clamp_env_cfg() -> ManagerBasedRlEnvCfg:
         "in_world_frame": False,
       },
     ),
-    "tracking_task_body_pos": RewardTermCfg(
-      func=mdp.motion_tracking_task_body_pos,
-      weight=0.0,
-      params={
-        "command_name": "motion",
-        "task_body_names": (),  # Set in robot cfg.
-        "task_body_pos_scale": 10.0,
-      },
-    ),
-    "tracking_task_body_rot": RewardTermCfg(
-      func=mdp.motion_tracking_task_body_rot,
-      weight=0.0,
-      params={
-        "command_name": "motion",
-        "task_body_names": (),  # Set in robot cfg.
-        "task_body_rot_scale": 5.0,
-      },
-    ),
-    "tracking_root_vel_xy": RewardTermCfg(
-      func=mdp.motion_tracking_root_vel_xy,
-      weight=0.0,
-      params={"command_name": "motion", "in_world_frame": False},
-    ),
-    "tracking_root_ang_vel_yaw": RewardTermCfg(
-      func=mdp.motion_tracking_root_ang_vel_yaw,
-      weight=0.0,
-      params={"command_name": "motion", "in_world_frame": False},
-    ),
-    "tracking_root_height": RewardTermCfg(
-      func=mdp.motion_tracking_root_height,
-      weight=0.0,
-      params={"command_name": "motion", "height_scale": 5.0},
-    ),
     "feet_slip": RewardTermCfg(
-      func=mdp.feet_slip,
+      func=velocity_mdp.feet_slip,
       weight=-0.1,
       params={
         "sensor_name": "feet_ground_contact",
-        "foot_body_names": (),  # Set in robot cfg.
         "command_name": "motion",
+        # Motion command is not a velocity command; keep this always active.
+        "command_threshold": -1.0,
+        "asset_cfg": SceneEntityCfg("robot", site_names=()),  # Set in robot cfg.
       },
     ),
-    "feet_contact_forces": RewardTermCfg(
-      func=mdp.feet_contact_forces,
-      weight=-5.0e-4,
-      params={"sensor_name": "feet_ground_contact", "max_contact_force": 100.0},
-    ),
-    "feet_stumble": RewardTermCfg(
-      func=mdp.feet_stumble,
-      weight=-1.25,
-      params={"sensor_name": "feet_ground_contact", "ratio": 4.0},
+    "soft_landing": RewardTermCfg(
+      func=velocity_mdp.soft_landing,
+      weight=-1.0e-5,
+      params={
+        "sensor_name": "feet_ground_contact",
+        # Motion command is not a velocity command; keep this always active.
+        "command_name": "motion",
+        "command_threshold": -1.0,
+      },
     ),
     "dof_pos_limits": RewardTermCfg(
       func=mdp.joint_pos_limits,
       weight=-5.0,
       params={"asset_cfg": SceneEntityCfg("robot", joint_names=(".*",))},
     ),
-    "dof_torque_limits": RewardTermCfg(
-      func=mdp.dof_torque_limits,
-      weight=-1.0,
-      params={"asset_cfg": SceneEntityCfg("robot"), "soft_torque_limit": 0.95},
+    "joint_torques_l2": RewardTermCfg(
+      func=mdp.joint_torques_l2,
+      # Calibrated for CLAMP scale where joint_torques_l2 is O(1e3).
+      weight=-1.0e-4,
+      params={"asset_cfg": SceneEntityCfg("robot")},
     ),
     "dof_vel": RewardTermCfg(
       func=mdp.joint_vel_l2,
@@ -425,18 +396,21 @@ def make_clamp_env_cfg() -> ManagerBasedRlEnvCfg:
     ),
     "action_rate": RewardTermCfg(func=mdp.action_rate_l2, weight=-0.01),
     "feet_air_time": RewardTermCfg(
-      func=mdp.feet_air_time,
+      func=velocity_mdp.feet_air_time,
       weight=5.0,
       params={
         "sensor_name": "feet_ground_contact",
         "command_name": "motion",
-        "target_air_time": 0.5,
+        # Motion command is not a velocity command; keep this always active.
+        "command_threshold": -1.0,
+        "threshold_min": 0.05,
+        "threshold_max": 0.5,
       },
     ),
     "ang_vel_xy": RewardTermCfg(
-      func=mdp.ang_vel_xy,
+      func=velocity_mdp.body_angular_velocity_penalty,
       weight=-0.01,
-      params={"asset_cfg": SceneEntityCfg("robot")},
+      params={"asset_cfg": SceneEntityCfg("robot", body_names=())},  # Set in robot cfg.
     ),
     "ankle_dof_acc": RewardTermCfg(
       func=mdp.joint_acc_l2,
@@ -466,9 +440,9 @@ def make_clamp_env_cfg() -> ManagerBasedRlEnvCfg:
 
   terminations: dict[str, TerminationTermCfg] = {
     "time_out": TerminationTermCfg(func=mdp.time_out, time_out=True),
-    "torso_contact": TerminationTermCfg(
-      func=mdp.torso_contact_force,
-      params={"sensor_name": "torso_ground_contact", "threshold": 1.0},
+    "illegal_contact": TerminationTermCfg(
+      func=velocity_mdp.illegal_contact,
+      params={"sensor_name": "torso_ground_contact"},
     ),
     "root_height_diff": TerminationTermCfg(
       func=mdp.bad_root_height_diff,

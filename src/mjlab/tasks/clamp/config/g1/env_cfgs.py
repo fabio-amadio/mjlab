@@ -63,10 +63,7 @@ G1_TASK_BODY_NAMES = (
   "left_wrist_yaw_link",
   "right_wrist_yaw_link",
 )
-G1_FEET_BODY_NAMES = (
-  "left_ankle_roll_link",
-  "right_ankle_roll_link",
-)
+G1_FEET_SITE_NAMES = ("left_foot", "right_foot")
 
 DEFAULT_CLAMP_STAGE_A_MOTION_SOURCE = str(
   Path(__file__).resolve().with_name("motion_data_cfg.yaml")
@@ -147,9 +144,8 @@ def unitree_g1_flat_clamp_teacher_env_cfg(
     key_body_term.params["key_body_names"] = G1_KEY_BODY_NAMES
 
   cfg.rewards["tracking_keybody_pos"].params["key_body_names"] = G1_KEY_BODY_NAMES
-  cfg.rewards["tracking_task_body_pos"].params["task_body_names"] = G1_TASK_BODY_NAMES
-  cfg.rewards["tracking_task_body_rot"].params["task_body_names"] = G1_TASK_BODY_NAMES
-  cfg.rewards["feet_slip"].params["foot_body_names"] = G1_FEET_BODY_NAMES
+  cfg.rewards["feet_slip"].params["asset_cfg"].site_names = G1_FEET_SITE_NAMES
+  cfg.rewards["ang_vel_xy"].params["asset_cfg"].body_names = ("pelvis",)
 
   cfg.events["foot_friction"].params[
     "asset_cfg"
