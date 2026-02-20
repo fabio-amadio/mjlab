@@ -395,16 +395,13 @@ def make_clamp_env_cfg() -> ManagerBasedRlEnvCfg:
       params={"asset_cfg": SceneEntityCfg("robot", joint_names=(".*",))},
     ),
     "action_rate": RewardTermCfg(func=mdp.action_rate_l2, weight=-0.01),
-    "feet_air_time": RewardTermCfg(
-      func=velocity_mdp.feet_air_time,
+    "feet_air_time_twist": RewardTermCfg(
+      func=mdp.feet_air_time_twist,
       weight=5.0,
       params={
         "sensor_name": "feet_ground_contact",
         "command_name": "motion",
-        # Motion command is not a velocity command; keep this always active.
-        "command_threshold": -1.0,
-        "threshold_min": 0.05,
-        "threshold_max": 0.5,
+        "target_air_time": 0.5,
       },
     ),
     "ang_vel_xy": RewardTermCfg(

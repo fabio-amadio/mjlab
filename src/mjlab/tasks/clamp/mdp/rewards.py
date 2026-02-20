@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING, cast
 
 import torch
 
+from mjlab.sensor import ContactSensor
 from mjlab.utils.lab_api.math import (
   quat_apply_inverse,
   quat_error_magnitude,
@@ -141,3 +142,22 @@ def motion_tracking_keybody_pos(
   key_body_pos_err = torch.sum(key_body_pos_diff * key_body_pos_diff, dim=-1)
   key_body_pos_err = torch.sum(key_body_pos_err, dim=-1)
   return torch.exp(-key_body_pos_scale * key_body_pos_err)
+
+
+def feet_air_time_twist(
+  env: ManagerBasedRlEnv,
+  sensor_name: str,
+  command_name: str,
+  target_air_time: float = 0.5,
+) -> torch.Tensor:
+  """TWIST-style feet air-time term (touchdown-based, short-swing penalty)."""
+  command = cast(MotionCommand, env.command_manager.get_term(command_name))
+  sensor: ContactSensor = env.scene[sensor_name]
+  sensor_data = sensor.data
+  first_contact = sensor.compute_first_contact(dt=env.step_dt)
+  assert sensor_data.last_air_time is not None
+  air_time = (sensor_data.last_air_time - target_air_time) * first_contact.float()
+  air_time = air_time.clamp(max=0.0)
+  rew_airtime = air_time.sum(dim=1)
+  rew_airtime *= torch.norm(command.anchor_lin_vel_w[:, :2], dim=1) > 0.05
+  return rew_airtime
