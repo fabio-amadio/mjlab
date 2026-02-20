@@ -108,7 +108,9 @@ class PklMotionLibrary:
     show_progress: bool | None = None,
   ) -> None:
     self.device = device
-    motion_files, per_motion_weights = self._resolve_motion_entries(motion_source)
+    motion_files, per_motion_weights, per_motion_quat_conventions = (
+      self._resolve_motion_entries(motion_source)
+    )
     if len(motion_files) == 0:
       raise ValueError(f"No .pkl motion files found in: {motion_source}")
 
@@ -130,9 +132,10 @@ class PklMotionLibrary:
     local_body_rot_list: list[torch.Tensor] = []
     local_body_ang_vel_list: list[torch.Tensor] = []
 
-    for motion_file, motion_weight in self._iter_motion_entries(
+    for motion_file, motion_weight, quat_convention in self._iter_motion_entries(
       motion_files=motion_files,
       per_motion_weights=per_motion_weights,
+      per_motion_quat_conventions=per_motion_quat_conventions,
       show_progress=show_progress,
     ):
       with open(motion_file, "rb") as f:
@@ -155,6 +158,7 @@ class PklMotionLibrary:
       root_rot = torch.tensor(
         np.asarray(motion_data["root_rot"]), dtype=torch.float32, device=self.device
       )
+      root_rot = self._to_mjlab_quat(root_rot, quat_convention)
       dof_pos = torch.tensor(
         np.asarray(motion_data["dof_pos"]), dtype=torch.float32, device=self.device
       )
@@ -199,6 +203,7 @@ class PklMotionLibrary:
           dtype=torch.float32,
           device=self.device,
         )
+        local_body_rot = self._to_mjlab_quat(local_body_rot, quat_convention)
         local_body_ang_vel = self._quat_angular_velocity(local_body_rot, dt)
       else:
         self._has_local_body_rot = False
@@ -282,9 +287,10 @@ class PklMotionLibrary:
     cls,
     motion_files: list[Path],
     per_motion_weights: list[float],
+    per_motion_quat_conventions: list[Literal["xyzw", "wxyz"]],
     show_progress: bool | None,
   ):
-    entries = list(zip(motion_files, per_motion_weights))
+    entries = list(zip(motion_files, per_motion_weights, per_motion_quat_conventions))
     if (
       cls._should_show_progress(show_progress)
       and tqdm is not None
@@ -303,15 +309,15 @@ class PklMotionLibrary:
   @classmethod
   def _resolve_motion_entries(
     cls, motion_source: str
-  ) -> tuple[list[Path], list[float]]:
+  ) -> tuple[list[Path], list[float], list[Literal["xyzw", "wxyz"]]]:
     source = Path(motion_source)
     if source.suffix in (".yaml", ".yml") and source.is_file():
       return cls._resolve_motion_entries_from_yaml(source)
     if source.is_dir():
       files = sorted(source.rglob("*.pkl"))
-      return files, [1.0] * len(files)
+      return files, [1.0] * len(files), ["xyzw"] * len(files)
     if source.suffix == ".pkl" and source.is_file():
-      return [source], [1.0]
+      return [source], [1.0], ["xyzw"]
     raise ValueError(
       "PKL motion source must be an existing .pkl/.yaml file or directory. "
       f"Got: {motion_source}"
@@ -320,7 +326,7 @@ class PklMotionLibrary:
   @classmethod
   def _resolve_motion_entries_from_yaml(
     cls, yaml_path: Path
-  ) -> tuple[list[Path], list[float]]:
+  ) -> tuple[list[Path], list[float], list[Literal["xyzw", "wxyz"]]]:
     config = cls._load_yaml_config(yaml_path)
     root_path_raw = config.get("root_path", ".")
     if not isinstance(root_path_raw, str):
@@ -331,15 +337,21 @@ class PklMotionLibrary:
     if not root_path.is_absolute():
       root_path = (yaml_path.parent / root_path).resolve()
 
+    default_quat_convention = cls._normalize_quat_convention(
+      config.get("default_quat_convention", "xyzw"),
+      context=f"{yaml_path} top-level `default_quat_convention`",
+    )
+
     subfolders = config.get("subfolders")
     if not isinstance(subfolders, list):
       raise ValueError(
         f"`subfolders` must be a list in {yaml_path}. "
-        "Expected entries like `{name: cnrs, weight: 1.0}`."
+        "Expected entries like `{name: cnrs, weight: 1.0, quat_convention: xyzw}`."
       )
 
     motion_files: list[Path] = []
     motion_weights: list[float] = []
+    motion_quat_conventions: list[Literal["xyzw", "wxyz"]] = []
     for entry in subfolders:
       if not isinstance(entry, dict):
         raise ValueError(f"Invalid subfolder entry in {yaml_path}: {entry}")
@@ -362,6 +374,11 @@ class PklMotionLibrary:
           f"Weight for subfolder `{folder_name}` must be non-negative in {yaml_path}."
         )
 
+      quat_convention = cls._normalize_quat_convention(
+        entry.get("quat_convention", default_quat_convention),
+        context=f"{yaml_path} subfolder `{folder_name}` `quat_convention`",
+      )
+
       folder_path = root_path / folder_name
       if not folder_path.exists():
         raise ValueError(
@@ -378,10 +395,11 @@ class PklMotionLibrary:
 
       motion_files.extend(folder_files)
       motion_weights.extend([weight] * len(folder_files))
+      motion_quat_conventions.extend([quat_convention] * len(folder_files))
 
     if len(motion_files) == 0:
       raise ValueError(f"No .pkl files resolved from YAML config: {yaml_path}")
-    return motion_files, motion_weights
+    return motion_files, motion_weights, motion_quat_conventions
 
   @classmethod
   def _load_yaml_config(cls, yaml_path: Path) -> dict[str, object]:
@@ -485,6 +503,51 @@ class PklMotionLibrary:
       vel[:-1] = (values[1:] - values[:-1]) / max(dt, 1e-6)
       vel[-1] = vel[-2]
     return vel
+
+  @staticmethod
+  def _quat_xyzw_to_wxyz(quat: torch.Tensor) -> torch.Tensor:
+    if quat.shape[-1] != 4:
+      raise ValueError(
+        "Expected quaternion tensor with last dimension 4, "
+        f"got shape {tuple(quat.shape)}"
+      )
+    return quat.roll(1, dims=-1)
+
+  @classmethod
+  def _to_mjlab_quat(
+    cls, quat: torch.Tensor, quat_convention: Literal["xyzw", "wxyz"]
+  ) -> torch.Tensor:
+    if quat_convention == "xyzw":
+      quat = cls._quat_xyzw_to_wxyz(quat)
+    elif quat_convention != "wxyz":
+      raise ValueError(
+        "Invalid quaternion convention. Expected 'xyzw' or 'wxyz', "
+        f"got: {quat_convention}"
+      )
+    return cls._normalize_quaternion(quat)
+
+  @staticmethod
+  def _normalize_quat_convention(
+    value: object, *, context: str
+  ) -> Literal["xyzw", "wxyz"]:
+    if not isinstance(value, str):
+      raise ValueError(
+        f"Quaternion convention must be a string in {context}. "
+        f"Got: {type(value)}"
+      )
+    normalized = value.strip().lower()
+    if normalized == "xyzw":
+      return "xyzw"
+    if normalized == "wxyz":
+      return "wxyz"
+    raise ValueError(
+      f"Invalid quaternion convention in {context}: {value}. "
+      "Expected one of: 'xyzw', 'wxyz'."
+    )
+
+  @staticmethod
+  def _normalize_quaternion(quat: torch.Tensor) -> torch.Tensor:
+    return quat / torch.clamp(torch.norm(quat, dim=-1, keepdim=True), min=1.0e-8)
 
   @staticmethod
   def _quat_slerp_batch(
