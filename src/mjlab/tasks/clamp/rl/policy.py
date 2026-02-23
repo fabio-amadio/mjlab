@@ -78,7 +78,7 @@ class MotionEncoder(nn.Module):
 
 
 class ClampActorCriticMimic(nn.Module):
-  """CLAMP teacher actor-critic with TWIST-style temporal motion encoder."""
+  """CLAMP teacher actor-critic with temporal motion encoder."""
 
   is_recurrent = False
 
@@ -157,7 +157,7 @@ class ClampActorCriticMimic(nn.Module):
       actor_out_dim = [2, num_actions]
     else:
       actor_out_dim = num_actions
-    self.actor = self._build_twist_mlp(
+    self.actor = self._build_mlp(
       input_dim=actor_backbone_in,
       output_dim=actor_out_dim,
       hidden_dims=actor_hidden_dims,
@@ -182,7 +182,7 @@ class ClampActorCriticMimic(nn.Module):
     critic_backbone_in = (
       num_critic_obs - self.motion_obs_dim + self.single_motion_obs_dim + motion_latent_dim
     )
-    self.critic = self._build_twist_mlp(
+    self.critic = self._build_mlp(
       input_dim=critic_backbone_in,
       output_dim=1,
       hidden_dims=critic_hidden_dims,
@@ -269,7 +269,7 @@ class ClampActorCriticMimic(nn.Module):
     Normal.set_default_validate_args(False)
 
   @staticmethod
-  def _build_twist_mlp(
+  def _build_mlp(
     input_dim: int,
     output_dim: int | list[int] | tuple[int, ...],
     hidden_dims: tuple[int, ...] | list[int],

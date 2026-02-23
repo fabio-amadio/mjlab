@@ -64,7 +64,7 @@ G1_TASK_BODY_NAMES = (
   "right_wrist_yaw_link",
 )
 G1_FEET_SITE_NAMES = ("left_foot", "right_foot")
-G1_TWIST_DOF_ERR_W = (
+G1_DOF_ERR_W = (
   1.0,
   0.8,
   0.8,
@@ -168,13 +168,9 @@ def unitree_g1_flat_clamp_teacher_env_cfg(
   motion_cmd.command_key_body_names = G1_KEY_BODY_NAMES
   motion_cmd.sampling_mode = "uniform"
 
-  for group_name in ("policy", "critic"):
-    key_body_term = cfg.observations[group_name].terms["priv_info_key_body_pos"]
-    key_body_term.params["key_body_names"] = G1_KEY_BODY_NAMES
-
   cfg.rewards["tracking_keybody_pos"].params["key_body_names"] = G1_KEY_BODY_NAMES
-  cfg.rewards["tracking_joint_dof"].params["dof_weights"] = G1_TWIST_DOF_ERR_W
-  cfg.rewards["tracking_joint_vel"].params["dof_weights"] = G1_TWIST_DOF_ERR_W
+  cfg.rewards["tracking_joint_dof"].params["dof_weights"] = G1_DOF_ERR_W
+  cfg.rewards["tracking_joint_vel"].params["dof_weights"] = G1_DOF_ERR_W
   cfg.rewards["feet_slip"].params["asset_cfg"].site_names = G1_FEET_SITE_NAMES
   cfg.rewards["ang_vel_xy"].params["asset_cfg"].body_names = ("pelvis",)
 

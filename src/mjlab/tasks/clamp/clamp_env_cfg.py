@@ -31,7 +31,7 @@ VELOCITY_RANGE = {
   "yaw": (-0.78, 0.78),
 }
 
-TWIST_PUSH_VELOCITY_RANGE = {
+PUSH_VELOCITY_RANGE = {
   "x": (-1.0, 1.0),
   "y": (-1.0, 1.0),
   "z": (0.0, 0.0),
@@ -68,27 +68,25 @@ def make_clamp_env_cfg() -> ManagerBasedRlEnvCfg:
   """Create CLAMP teacher task configuration template."""
 
   ##
-  # Observations (TWIST teacher structure)
+  # Observations
   ##
 
-  priv_mimic_terms = {
-    "priv_motion_ref": ObservationTermCfg(
+  command_terms = {
+    "command": ObservationTermCfg(
       func=mdp.generated_commands,
-      params={
-        "command_name": "motion",
-      },
+      params={"command_name": "motion"},
     ),
   }
 
   proprio_terms = {
-    "base_ang_vel": ObservationTermCfg(
-      func=mdp.builtin_sensor,
-      params={"sensor_name": "robot/imu_ang_vel"},
-      noise=Unoise(n_min=-0.1, n_max=0.1),
-    ),
     "base_lin_vel": ObservationTermCfg(
       func=mdp.builtin_sensor,
       params={"sensor_name": "robot/imu_lin_vel"},
+      noise=Unoise(n_min=-0.1, n_max=0.1),
+    ),
+    "base_ang_vel": ObservationTermCfg(
+      func=mdp.builtin_sensor,
+      params={"sensor_name": "robot/imu_ang_vel"},
       noise=Unoise(n_min=-0.1, n_max=0.1),
     ),
     "projected_gravity": ObservationTermCfg(
@@ -107,42 +105,42 @@ def make_clamp_env_cfg() -> ManagerBasedRlEnvCfg:
     "actions": ObservationTermCfg(func=mdp.last_action),
   }
 
-  priv_info_terms = {
-    "priv_info_root_pos": ObservationTermCfg(
-      func=mdp.robot_anchor_pos,
+  privileged_terms = {
+    "motion_anchor_pos_b": ObservationTermCfg(
+      func=mdp.motion_anchor_pos_b,
       params={"command_name": "motion"},
     ),
-    "priv_info_root_rpy": ObservationTermCfg(
-      func=mdp.robot_anchor_rpy,
+    "motion_anchor_ori_b": ObservationTermCfg(
+      func=mdp.motion_anchor_ori_b,
       params={"command_name": "motion"},
     ),
-    "priv_info_key_body_pos": ObservationTermCfg(
-      func=mdp.robot_key_body_pos_b,
-      params={
-        "command_name": "motion",
-        "key_body_names": (),  # Set in robot cfg.
-      },
+    "body_pos": ObservationTermCfg(
+      func=mdp.robot_body_pos_b,
+      params={"command_name": "motion"},
     ),
-    "priv_info_feet_contact_mask": ObservationTermCfg(
+    "body_ori": ObservationTermCfg(
+      func=mdp.robot_body_ori_b,
+      params={"command_name": "motion"},
+    ),
+    "feet_contact_mask": ObservationTermCfg(
       func=mdp.feet_contact_mask,
-      params={
-        "sensor_name": "feet_ground_contact",  # Set/created in robot cfg.
-      },
+      params={"sensor_name": "feet_ground_contact"},
     ),
   }
 
-  teacher_terms = {**priv_mimic_terms, **proprio_terms, **priv_info_terms}
+  policy_terms = {**command_terms, **proprio_terms}
+  critic_terms = {**policy_terms, **privileged_terms}
 
   observations = {
     "policy": ObservationGroupCfg(
-      terms=dict(teacher_terms),
+      terms=policy_terms,
       concatenate_terms=True,
       enable_corruption=True,
     ),
     "critic": ObservationGroupCfg(
-      terms=dict(teacher_terms),
+      terms=critic_terms,
       concatenate_terms=True,
-      enable_corruption=True,
+      enable_corruption=False,
     ),
   }
 
@@ -198,7 +196,7 @@ def make_clamp_env_cfg() -> ManagerBasedRlEnvCfg:
       func=mdp.push_by_setting_velocity,
       mode="interval",
       interval_range_s=(4.0, 4.0),
-      params={"velocity_range": TWIST_PUSH_VELOCITY_RANGE},
+      params={"velocity_range": PUSH_VELOCITY_RANGE},
     ),
     "push_end_effector": EventTermCfg(
       func=mdp.apply_external_force_torque,

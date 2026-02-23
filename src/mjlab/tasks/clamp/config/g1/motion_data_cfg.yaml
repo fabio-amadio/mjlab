@@ -2,16 +2,16 @@ root_path: ../../../../../../assets/motions/clamp/g1_motions_npz
 subfolders:
   - name: mocap
     weight: 100.0
-  - name: accad
-    weight: 1.0
-  - name: bmlhandball
-    weight: 1.0
-  - name: bmlmovi
-    weight: 1.0
-  - name: cmu
-    weight: 1.0
-  - name: cnrs
-    weight: 1.0
+  # - name: accad
+  #   weight: 1.0
+  # - name: bmlhandball
+  #   weight: 1.0
+  # - name: bmlmovi
+  #   weight: 1.0
+  # - name: cmu
+  #   weight: 1.0
+  # - name: cnrs
+  #   weight: 1.0
   # - name: dancedb
   #   weight: 1.0
   # - name: dfaust
