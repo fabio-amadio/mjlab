@@ -373,6 +373,11 @@ def make_clamp_env_cfg() -> ManagerBasedRlEnvCfg:
         "command_threshold": -1.0,
       },
     ),
+    "self_collisions": RewardTermCfg(
+      func=velocity_mdp.self_collision_cost,
+      weight=-0.1,
+      params={"sensor_name": "self_collision"},
+    ),
     "dof_pos_limits": RewardTermCfg(
       func=mdp.joint_pos_limits,
       weight=-5.0,
@@ -408,26 +413,6 @@ def make_clamp_env_cfg() -> ManagerBasedRlEnvCfg:
       func=velocity_mdp.body_angular_velocity_penalty,
       weight=-0.01,
       params={"asset_cfg": SceneEntityCfg("robot", body_names=())},  # Set in robot cfg.
-    ),
-    "ankle_dof_acc": RewardTermCfg(
-      func=mdp.joint_acc_l2,
-      weight=-1.0e-7,
-      params={
-        "asset_cfg": SceneEntityCfg(
-          "robot",
-          joint_names=(".*_ankle_pitch_joint", ".*_ankle_roll_joint"),
-        ),
-      },
-    ),
-    "ankle_dof_vel": RewardTermCfg(
-      func=mdp.joint_vel_l2,
-      weight=-2.0e-4,
-      params={
-        "asset_cfg": SceneEntityCfg(
-          "robot",
-          joint_names=(".*_ankle_pitch_joint", ".*_ankle_roll_joint"),
-        ),
-      },
     ),
   }
 
