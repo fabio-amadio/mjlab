@@ -63,38 +63,6 @@ DEFAULT_TEACHER_FUTURE_STEPS = (
   95,
 )
 
-DEFAULT_TWIST_DOF_ERR_W = (
-  1.0,
-  0.8,
-  0.8,
-  1.0,
-  0.5,
-  0.5,
-  1.0,
-  0.8,
-  0.8,
-  1.0,
-  0.5,
-  0.5,
-  0.6,
-  0.6,
-  0.6,
-  0.8,
-  0.8,
-  0.8,
-  1.0,
-  0.4,
-  0.4,
-  0.4,
-  0.8,
-  0.8,
-  0.8,
-  1.0,
-  0.4,
-  0.4,
-  0.4,
-)
-
 
 def make_clamp_env_cfg() -> ManagerBasedRlEnvCfg:
   """Create CLAMP Stage-A teacher task configuration template."""
@@ -320,7 +288,6 @@ def make_clamp_env_cfg() -> ManagerBasedRlEnvCfg:
       params={
         "command_name": "motion",
         "pos_scale": 0.15,
-        "dof_weights": DEFAULT_TWIST_DOF_ERR_W,
       },
     ),
     "tracking_joint_vel": RewardTermCfg(
@@ -329,7 +296,6 @@ def make_clamp_env_cfg() -> ManagerBasedRlEnvCfg:
       params={
         "command_name": "motion",
         "vel_scale": 0.01,
-        "dof_weights": DEFAULT_TWIST_DOF_ERR_W,
       },
     ),
     "tracking_root_pose": RewardTermCfg(
