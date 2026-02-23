@@ -15,7 +15,6 @@ import torch
 
 from mjlab.managers import CommandTerm, CommandTermCfg
 from mjlab.utils.lab_api.math import (
-  euler_xyz_from_quat,
   matrix_from_quat,
   quat_apply,
   quat_apply_inverse,
@@ -842,62 +841,53 @@ class MotionCommand(CommandTerm):
       return self._query_motion_frames_library(step_offsets)
     return self._query_motion_frames_npz(step_offsets)
 
-  def _body_indices_by_name(self, selected_body_names: tuple[str, ...]) -> list[int]:
-    missing = [n for n in selected_body_names if n not in self.cfg.body_names]
-    if missing:
-      raise ValueError(
-        "Selected key body names are missing from cfg.body_names: "
-        f"{missing}. Available: {self.cfg.body_names}"
-      )
-    return [self.cfg.body_names.index(name) for name in selected_body_names]
-
-  def build_future_mimic_command(
+  def build_future_joint_ref_command(
     self,
     step_offsets: tuple[int, ...],
-    key_body_names: tuple[str, ...],
   ) -> torch.Tensor:
-    """Build future-reference mimic command stack.
+    """Build future joint-reference command stack.
 
     Layout per step:
-      root_pos_xyz(3), root_rpy(3), root_lin_vel_b(3), root_yaw_rate(1),
-      joint_pos(num_dof), key_body_pos_b(3 * num_key_bodies).
+      joint_pos(num_dof), joint_vel(num_dof).
     """
     if len(step_offsets) == 0:
       raise ValueError("`step_offsets` must contain at least one entry.")
 
     frames = self.query_motion_frames(step_offsets)
-    num_steps = len(step_offsets)
-    key_body_indices = self._body_indices_by_name(key_body_names)
+    command = torch.cat((frames.joint_pos, frames.joint_vel), dim=-1)
+    return command.reshape(self.num_envs, -1)
 
-    root_pos = frames.anchor_pos_w
-    root_quat = frames.anchor_quat_w
-    root_lin_vel_b = quat_apply_inverse(root_quat, frames.anchor_lin_vel_w)
-    root_ang_vel_b = quat_apply_inverse(root_quat, frames.anchor_ang_vel_w)
+  def build_future_joint_ref_anchor_command(
+    self,
+    step_offsets: tuple[int, ...],
+  ) -> torch.Tensor:
+    """Build future joint-reference command stack with anchor motion terms.
 
-    key_body_pos = frames.body_pos_w[:, :, key_body_indices, :] - root_pos[:, :, None, :]
-    root_quat_expand = root_quat[:, :, None, :].expand(-1, -1, len(key_body_indices), -1)
-    key_body_pos_b = quat_apply_inverse(root_quat_expand, key_body_pos).reshape(
-      self.num_envs, num_steps, -1
-    )
+    Layout per step:
+      joint_pos(num_dof),
+      joint_vel(num_dof),
+      anchor_lin_vel_b_xy(2),
+      anchor_ang_vel_b_z(1),
+      anchor_height_z_w(1).
+    """
+    if len(step_offsets) == 0:
+      raise ValueError("`step_offsets` must contain at least one entry.")
 
-    roll, pitch, yaw = euler_xyz_from_quat(root_quat.reshape(-1, 4))
-    roll = roll.reshape(self.num_envs, num_steps, 1)
-    pitch = pitch.reshape(self.num_envs, num_steps, 1)
-    yaw = yaw.reshape(self.num_envs, num_steps, 1)
+    frames = self.query_motion_frames(step_offsets)
+    anchor_lin_vel_b = quat_apply_inverse(frames.anchor_quat_w, frames.anchor_lin_vel_w)
+    anchor_ang_vel_b = quat_apply_inverse(frames.anchor_quat_w, frames.anchor_ang_vel_w)
+    anchor_lin_vel_xy = anchor_lin_vel_b[..., :2]
+    anchor_ang_vel_z = anchor_ang_vel_b[..., 2:3]
 
-    command = torch.cat(
-      (
-        root_pos[..., :3],
-        roll,
-        pitch,
-        yaw,
-        root_lin_vel_b,
-        root_ang_vel_b[..., 2:3],
-        frames.joint_pos,
-        key_body_pos_b,
-      ),
-      dim=-1,
-    )
+    terms = [
+      frames.joint_pos,
+      frames.joint_vel,
+      anchor_lin_vel_xy,
+      anchor_ang_vel_z,
+      frames.anchor_pos_w[..., 2:3],
+    ]
+
+    command = torch.cat(terms, dim=-1)
     return command.reshape(self.num_envs, -1)
 
   def _query_motion_frames_npz(self, step_offsets: tuple[int, ...]) -> MotionFrameBatch:
@@ -1555,17 +1545,44 @@ class JointRefMotionCommand(MotionCommand):
   """Tracking-style command representation: [joint_pos_ref, joint_vel_ref]."""
 
 
-class FutureMimicMotionCommand(MotionCommand):
-  """Future reference mimic stack command representation."""
+class FutureJointRefMotionCommand(MotionCommand):
+  """Future stacked joint reference command representation."""
 
   def __init__(self, cfg: MotionCommandCfg, env: ManagerBasedRlEnv):
     super().__init__(cfg, env)
     self._command_cache: torch.Tensor | None = None
 
   def _refresh_command_cache(self) -> None:
-    self._command_cache = self.build_future_mimic_command(
+    self._command_cache = self.build_future_joint_ref_command(
       step_offsets=self.cfg.command_step_offsets,
-      key_body_names=self.cfg.command_key_body_names,
+    )
+
+  @property
+  def command(self) -> torch.Tensor:
+    if self._command_cache is None:
+      self._refresh_command_cache()
+    assert self._command_cache is not None
+    return self._command_cache
+
+  def _resample_command(self, env_ids: torch.Tensor):
+    super()._resample_command(env_ids)
+    self._command_cache = None
+
+  def _update_command(self):
+    super()._update_command()
+    self._refresh_command_cache()
+
+
+class FutureJointRefAnchorMotionCommand(MotionCommand):
+  """Future stacked joint references with anchor motion terms."""
+
+  def __init__(self, cfg: MotionCommandCfg, env: ManagerBasedRlEnv):
+    super().__init__(cfg, env)
+    self._command_cache: torch.Tensor | None = None
+
+  def _refresh_command_cache(self) -> None:
+    self._command_cache = self.build_future_joint_ref_anchor_command(
+      step_offsets=self.cfg.command_step_offsets,
     )
 
   @property
@@ -1589,9 +1606,10 @@ class MotionCommandCfg(CommandTermCfg):
   motion_file: str
   anchor_body_name: str
   body_names: tuple[str, ...]
-  command_mode: Literal["joint_ref", "future_mimic"] = "joint_ref"
+  command_mode: Literal[
+    "joint_ref", "future_joint_ref", "future_joint_ref_anchor"
+  ] = "joint_ref"
   command_step_offsets: tuple[int, ...] = ()
-  command_key_body_names: tuple[str, ...] = ()
   motion_body_names: tuple[str, ...] | None = None
   entity_name: str
   pose_range: dict[str, tuple[float, float]] = field(default_factory=dict)
@@ -1612,16 +1630,15 @@ class MotionCommandCfg(CommandTermCfg):
   viz: VizCfg = field(default_factory=VizCfg)
 
   def build(self, env: ManagerBasedRlEnv) -> MotionCommand:
-    if self.command_mode == "future_mimic":
+    if self.command_mode in ("future_joint_ref", "future_joint_ref_anchor"):
       if len(self.command_step_offsets) == 0:
         raise ValueError(
-          "`command_step_offsets` must be non-empty when command_mode='future_mimic'."
+          "`command_step_offsets` must be non-empty when using a future command mode."
         )
-      if len(self.command_key_body_names) == 0:
-        raise ValueError(
-          "`command_key_body_names` must be non-empty when command_mode='future_mimic'."
-        )
-      return FutureMimicMotionCommand(self, env)
+    if self.command_mode == "future_joint_ref":
+      return FutureJointRefMotionCommand(self, env)
+    if self.command_mode == "future_joint_ref_anchor":
+      return FutureJointRefAnchorMotionCommand(self, env)
     if self.command_mode == "joint_ref":
       return JointRefMotionCommand(self, env)
     raise ValueError(f"Unsupported command_mode: {self.command_mode}")

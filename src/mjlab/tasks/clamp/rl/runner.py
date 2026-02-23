@@ -45,7 +45,7 @@ class ClampOnPolicyRunner(MjlabOnPolicyRunner):
       return None
     motion_obs_dim = int(command.shape[-1])
     motion_steps = 1
-    if motion_cmd_cfg.command_mode == "future_mimic":
+    if motion_cmd_cfg.command_mode in ("future_joint_ref", "future_joint_ref_anchor"):
       if len(motion_cmd_cfg.command_step_offsets) == 0:
         return None
       motion_steps = len(motion_cmd_cfg.command_step_offsets)

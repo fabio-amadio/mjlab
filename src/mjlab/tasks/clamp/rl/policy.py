@@ -149,6 +149,7 @@ class ClampActorCriticMimic(nn.Module):
       activation=activation,
       channel_size=motion_channels,
     )
+    print(f"Actor Motion Encoder: {self.actor_motion_encoder}")
     actor_backbone_in = (
       num_actor_obs - self.motion_obs_dim + self.single_motion_obs_dim + motion_latent_dim
     )
@@ -179,6 +180,7 @@ class ClampActorCriticMimic(nn.Module):
       activation=activation,
       channel_size=motion_channels,
     )
+    print(f"Critic Motion Encoder: {self.critic_motion_encoder}")
     critic_backbone_in = (
       num_critic_obs - self.motion_obs_dim + self.single_motion_obs_dim + motion_latent_dim
     )

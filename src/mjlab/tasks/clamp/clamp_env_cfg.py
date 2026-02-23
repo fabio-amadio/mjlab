@@ -180,9 +180,8 @@ def make_clamp_env_cfg() -> ManagerBasedRlEnvCfg:
       motion_file="",
       anchor_body_name="",
       body_names=(),
-      command_mode="future_mimic",
+      command_mode="future_joint_ref",
       command_step_offsets=DEFAULT_TEACHER_FUTURE_STEPS,
-      command_key_body_names=(),  # Set in robot cfg.
       sampling_mode="uniform",
     )
   }

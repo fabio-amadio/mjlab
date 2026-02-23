@@ -165,7 +165,6 @@ def unitree_g1_flat_clamp_teacher_env_cfg(
   motion_cmd.motion_file = DEFAULT_CLAMP_STAGE_A_MOTION_SOURCE
   motion_cmd.anchor_body_name = "pelvis"
   motion_cmd.body_names = G1_ALL_BODY_NAMES
-  motion_cmd.command_key_body_names = G1_KEY_BODY_NAMES
   motion_cmd.sampling_mode = "uniform"
 
   cfg.rewards["tracking_keybody_pos"].params["key_body_names"] = G1_KEY_BODY_NAMES
