@@ -54,7 +54,7 @@ def motion_end(
   command_name: str,
 ) -> torch.Tensor:
   command = cast(MotionCommand, env.command_manager.get_term(command_name))
-  if command._uses_pkl_motion:
+  if command._uses_motion_library:
     assert command.motion_lib is not None
     motion_times = command.time_steps.to(torch.float32) * env.step_dt + command.motion_time_offsets
     motion_lengths = command.motion_lib.get_motion_length(command.motion_ids)

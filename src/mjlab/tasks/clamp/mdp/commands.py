@@ -3,7 +3,6 @@ from __future__ import annotations
 import copy
 import math
 import os
-import pickle
 import sys
 import warnings
 from dataclasses import dataclass, field
@@ -16,10 +15,8 @@ import torch
 
 from mjlab.managers import CommandTerm, CommandTermCfg
 from mjlab.utils.lab_api.math import (
-  axis_angle_from_quat,
   matrix_from_quat,
   quat_apply,
-  quat_conjugate,
   quat_error_magnitude,
   quat_from_euler_xyz,
   quat_inv,
@@ -43,7 +40,7 @@ _DESIRED_FRAME_COLORS = ((1.0, 0.5, 0.5), (0.5, 1.0, 0.5), (0.5, 0.5, 1.0))
 
 class MotionLoader:
   def __init__(self, motion_file: str, device: str = "cpu") -> None:
-    with np.load(motion_file, allow_pickle=True) as data:
+    with np.load(motion_file) as data:
       self.joint_pos = torch.tensor(
         data["joint_pos"], dtype=torch.float32, device=device
       )
@@ -95,11 +92,148 @@ class MotionFrameBatch:
   anchor_ang_vel_w: torch.Tensor
 
 
-class PklMotionLibrary:
-  """Motion library for TWIST-style PKL files.
+def _env_int(name: str, default: int) -> int:
+  value = os.environ.get(name)
+  if value is None:
+    return default
+  try:
+    return int(value)
+  except ValueError:
+    return default
 
-  Supports loading a single PKL file or recursively scanning a directory.
+
+def _should_show_progress(show_progress: bool | None) -> bool:
+  if show_progress is not None:
+    return show_progress
+  return (
+    _env_int("RANK", 0) == 0
+    and _env_int("LOCAL_RANK", 0) == 0
+    and sys.stderr.isatty()
+  )
+
+
+def _load_yaml_config(yaml_path: Path) -> dict[str, object]:
+  try:
+    import yaml  # type: ignore[import-not-found]
+  except ModuleNotFoundError:
+    return _parse_minimal_yaml(yaml_path.read_text(encoding="utf-8"), yaml_path)
+
+  with open(yaml_path, "r", encoding="utf-8") as f:
+    data = yaml.safe_load(f)
+  if not isinstance(data, dict):
+    raise ValueError(f"YAML config must be a mapping at top level: {yaml_path}")
+  return data
+
+
+def _parse_yaml_scalar(value: str) -> object:
+  value = value.strip()
+  if value == "":
+    return ""
+  if len(value) >= 2 and value[0] == value[-1] and value[0] in ("'", '"'):
+    return value[1:-1]
+  lower = value.lower()
+  if lower in ("true", "false"):
+    return lower == "true"
+  try:
+    return int(value)
+  except ValueError:
+    pass
+  try:
+    return float(value)
+  except ValueError:
+    pass
+  return value
+
+
+def _parse_minimal_yaml(text: str, yaml_path: Path) -> dict[str, object]:
+  """Parse a minimal YAML subset used by CLAMP motion configs.
+
+  Supported structure:
+    root_path: ...
+    subfolders:
+      - name: ...
+        weight: ...
   """
+  cfg: dict[str, object] = {}
+  active_list_key: str | None = None
+  current_item: dict[str, object] | None = None
+
+  for raw_line in text.splitlines():
+    line = raw_line.split("#", 1)[0].rstrip()
+    if not line.strip():
+      continue
+    stripped = line.lstrip()
+    indent = len(line) - len(stripped)
+
+    if indent == 0 and stripped.endswith(":"):
+      key = stripped[:-1].strip()
+      cfg[key] = []
+      active_list_key = key
+      current_item = None
+      continue
+
+    if indent == 0 and ":" in stripped:
+      key, value = stripped.split(":", 1)
+      cfg[key.strip()] = _parse_yaml_scalar(value)
+      active_list_key = None
+      current_item = None
+      continue
+
+    if active_list_key is None:
+      raise ValueError(f"Unsupported YAML structure in {yaml_path}: line `{raw_line}`")
+
+    assert isinstance(cfg[active_list_key], list)
+    if stripped.startswith("-"):
+      item_content = stripped[1:].strip()
+      current_item = {}
+      cfg[active_list_key].append(current_item)
+      if item_content:
+        if ":" not in item_content:
+          raise ValueError(
+            f"Invalid list item format in {yaml_path}: line `{raw_line}`"
+          )
+        key, value = item_content.split(":", 1)
+        current_item[key.strip()] = _parse_yaml_scalar(value)
+    else:
+      if current_item is None or ":" not in stripped:
+        raise ValueError(
+          f"Invalid nested YAML entry in {yaml_path}: line `{raw_line}`"
+        )
+      key, value = stripped.split(":", 1)
+      current_item[key.strip()] = _parse_yaml_scalar(value)
+
+  return cfg
+
+
+def _quat_slerp_batch(
+  q0: torch.Tensor, q1: torch.Tensor, blend: torch.Tensor
+) -> torch.Tensor:
+  """Vectorized quaternion slerp for tensors with matching shape [..., 4]."""
+  q0 = q0 / torch.clamp(torch.norm(q0, dim=-1, keepdim=True), min=1e-8)
+  q1 = q1 / torch.clamp(torch.norm(q1, dim=-1, keepdim=True), min=1e-8)
+  blend = blend.unsqueeze(-1)
+
+  dot = torch.sum(q0 * q1, dim=-1, keepdim=True)
+  q1 = torch.where(dot < 0.0, -q1, q1)
+  dot = torch.abs(dot).clamp(max=1.0)
+
+  close = dot > 0.9995
+  theta_0 = torch.acos(dot)
+  sin_theta_0 = torch.sin(theta_0)
+  theta = theta_0 * blend
+  sin_theta = torch.sin(theta)
+
+  s0 = torch.sin(theta_0 - theta) / torch.clamp(sin_theta_0, min=1e-8)
+  s1 = sin_theta / torch.clamp(sin_theta_0, min=1e-8)
+  slerped = s0 * q0 + s1 * q1
+
+  lerped = (1.0 - blend) * q0 + blend * q1
+  lerped = lerped / torch.clamp(torch.norm(lerped, dim=-1, keepdim=True), min=1e-8)
+  return torch.where(close, lerped, slerped)
+
+
+class NpzMotionLibrary:
+  """Motion library for multi-file NPZ datasets."""
 
   def __init__(
     self,
@@ -108,124 +242,147 @@ class PklMotionLibrary:
     show_progress: bool | None = None,
   ) -> None:
     self.device = device
-    motion_files, per_motion_weights, per_motion_quat_conventions = (
-      self._resolve_motion_entries(motion_source)
-    )
+    motion_files, per_motion_weights = self._resolve_motion_entries(motion_source)
     if len(motion_files) == 0:
-      raise ValueError(f"No .pkl motion files found in: {motion_source}")
+      raise ValueError(f"No .npz motion files found in: {motion_source}")
 
     self.body_names: tuple[str, ...] | None = None
     self._num_dof: int | None = None
-    self._has_local_body_rot = True
+    self._num_bodies: int | None = None
 
     motion_num_frames: list[int] = []
     motion_lengths_s: list[float] = []
     motion_weights: list[float] = []
-    root_pos_list: list[torch.Tensor] = []
-    root_rot_list: list[torch.Tensor] = []
-    root_vel_list: list[torch.Tensor] = []
-    root_ang_vel_list: list[torch.Tensor] = []
-    dof_pos_list: list[torch.Tensor] = []
-    dof_vel_list: list[torch.Tensor] = []
-    local_body_pos_list: list[torch.Tensor] = []
-    local_body_lin_vel_list: list[torch.Tensor] = []
-    local_body_rot_list: list[torch.Tensor] = []
-    local_body_ang_vel_list: list[torch.Tensor] = []
+    joint_pos_list: list[torch.Tensor] = []
+    joint_vel_list: list[torch.Tensor] = []
+    body_pos_w_list: list[torch.Tensor] = []
+    body_quat_w_list: list[torch.Tensor] = []
+    body_lin_vel_w_list: list[torch.Tensor] = []
+    body_ang_vel_w_list: list[torch.Tensor] = []
 
-    for motion_file, motion_weight, quat_convention in self._iter_motion_entries(
+    for motion_file, motion_weight in self._iter_motion_entries(
       motion_files=motion_files,
       per_motion_weights=per_motion_weights,
-      per_motion_quat_conventions=per_motion_quat_conventions,
       show_progress=show_progress,
     ):
-      with open(motion_file, "rb") as f:
-        motion_data = pickle.load(f)
+      with np.load(motion_file) as data:
+        required_keys = {
+          "joint_pos",
+          "joint_vel",
+          "body_pos_w",
+          "body_quat_w",
+          "body_lin_vel_w",
+          "body_ang_vel_w",
+        }
+        missing_keys = required_keys.difference(set(data.keys()))
+        if missing_keys:
+          raise ValueError(
+            "Invalid motion npz. Missing keys: "
+            f"{sorted(missing_keys)} in {motion_file}"
+          )
 
-      required_keys = {"root_pos", "root_rot", "dof_pos", "local_body_pos", "link_body_list"}
-      missing_keys = required_keys.difference(set(motion_data.keys()))
-      if missing_keys:
-        raise ValueError(
-          "Invalid motion pkl. Missing keys: "
-          f"{sorted(missing_keys)} in {motion_file}"
+        fps = self._extract_fps(data)
+        dt = 1.0 / max(fps, 1e-6)
+
+        joint_pos = torch.tensor(
+          np.asarray(data["joint_pos"]), dtype=torch.float32, device=self.device
+        )
+        joint_vel = torch.tensor(
+          np.asarray(data["joint_vel"]), dtype=torch.float32, device=self.device
+        )
+        body_pos_w = torch.tensor(
+          np.asarray(data["body_pos_w"]), dtype=torch.float32, device=self.device
+        )
+        body_quat_w = torch.tensor(
+          np.asarray(data["body_quat_w"]), dtype=torch.float32, device=self.device
+        )
+        body_lin_vel_w = torch.tensor(
+          np.asarray(data["body_lin_vel_w"]), dtype=torch.float32, device=self.device
+        )
+        body_ang_vel_w = torch.tensor(
+          np.asarray(data["body_ang_vel_w"]), dtype=torch.float32, device=self.device
         )
 
-      fps = float(motion_data.get("fps", 30.0))
-      dt = 1.0 / max(fps, 1e-6)
+        file_body_names = MotionLoader._extract_body_names(data)
 
-      root_pos = torch.tensor(
-        np.asarray(motion_data["root_pos"]), dtype=torch.float32, device=self.device
-      )
-      root_rot = torch.tensor(
-        np.asarray(motion_data["root_rot"]), dtype=torch.float32, device=self.device
-      )
-      root_rot = self._to_mjlab_quat(root_rot, quat_convention)
-      dof_pos = torch.tensor(
-        np.asarray(motion_data["dof_pos"]), dtype=torch.float32, device=self.device
-      )
-      local_body_pos = torch.tensor(
-        np.asarray(motion_data["local_body_pos"]), dtype=torch.float32, device=self.device
-      )
-
-      if root_pos.shape[0] < 2:
+      if joint_pos.ndim != 2:
+        raise ValueError(f"Invalid joint_pos shape in {motion_file}: {joint_pos.shape}")
+      if joint_vel.shape != joint_pos.shape:
         raise ValueError(
-          f"Motion {motion_file} has fewer than 2 frames: {root_pos.shape[0]}"
+          f"joint_vel must match joint_pos shape in {motion_file}: "
+          f"{joint_vel.shape} vs {joint_pos.shape}"
+        )
+      if body_pos_w.ndim != 3 or body_pos_w.shape[-1] != 3:
+        raise ValueError(f"Invalid body_pos_w shape in {motion_file}: {body_pos_w.shape}")
+      if body_quat_w.ndim != 3 or body_quat_w.shape[-1] != 4:
+        raise ValueError(f"Invalid body_quat_w shape in {motion_file}: {body_quat_w.shape}")
+      if body_lin_vel_w.shape != body_pos_w.shape:
+        raise ValueError(
+          f"body_lin_vel_w must match body_pos_w shape in {motion_file}: "
+          f"{body_lin_vel_w.shape} vs {body_pos_w.shape}"
+        )
+      if body_ang_vel_w.shape != body_pos_w.shape:
+        raise ValueError(
+          f"body_ang_vel_w must match body_pos_w shape in {motion_file}: "
+          f"{body_ang_vel_w.shape} vs {body_pos_w.shape}"
+        )
+      if (
+        joint_pos.shape[0] != body_pos_w.shape[0]
+        or joint_pos.shape[0] != body_quat_w.shape[0]
+      ):
+        raise ValueError(
+          "Frame count mismatch in motion npz: "
+          f"{motion_file} (joint={joint_pos.shape[0]}, body_pos={body_pos_w.shape[0]}, "
+          f"body_quat={body_quat_w.shape[0]})"
+        )
+      if joint_pos.shape[0] < 2:
+        raise ValueError(
+          f"Motion {motion_file} has fewer than 2 frames: {joint_pos.shape[0]}"
         )
 
-      link_body_list = tuple(
-        MotionLoader._decode_name(name) for name in list(motion_data["link_body_list"])
-      )
+      if file_body_names is None:
+        raise ValueError(
+          "Motion npz must include body names (`body_names` or `body_link_names`): "
+          f"{motion_file}"
+        )
       if self.body_names is None:
-        self.body_names = link_body_list
-      elif self.body_names != link_body_list:
+        self.body_names = tuple(file_body_names)
+      elif self.body_names != tuple(file_body_names):
         raise ValueError(
-          "All PKL files must share the same `link_body_list` order. "
+          "All NPZ files must share the same body name ordering. "
           f"Mismatch in {motion_file}."
         )
 
       if self._num_dof is None:
-        self._num_dof = int(dof_pos.shape[1])
-      elif self._num_dof != int(dof_pos.shape[1]):
+        self._num_dof = int(joint_pos.shape[1])
+      elif self._num_dof != int(joint_pos.shape[1]):
         raise ValueError(
-          "All PKL files must share the same number of DoFs. "
-          f"Expected {self._num_dof}, got {dof_pos.shape[1]} in {motion_file}."
+          "All NPZ files must share the same number of DoFs. "
+          f"Expected {self._num_dof}, got {joint_pos.shape[1]} in {motion_file}."
         )
 
-      root_vel = self._finite_difference(root_pos, dt)
-      root_ang_vel = self._quat_angular_velocity(root_rot, dt)
-      dof_vel = self._finite_difference(dof_pos, dt)
-      local_body_lin_vel = self._finite_difference(local_body_pos, dt)
-
-      local_body_rot = None
-      local_body_ang_vel = None
-      if "local_body_rot" in motion_data:
-        local_body_rot = torch.tensor(
-          np.asarray(motion_data["local_body_rot"]),
-          dtype=torch.float32,
-          device=self.device,
+      if self._num_bodies is None:
+        self._num_bodies = int(body_pos_w.shape[1])
+      elif self._num_bodies != int(body_pos_w.shape[1]):
+        raise ValueError(
+          "All NPZ files must share the same number of bodies. "
+          f"Expected {self._num_bodies}, got {body_pos_w.shape[1]} in {motion_file}."
         )
-        local_body_rot = self._to_mjlab_quat(local_body_rot, quat_convention)
-        local_body_ang_vel = self._quat_angular_velocity(local_body_rot, dt)
-      else:
-        self._has_local_body_rot = False
 
-      num_frames = int(root_pos.shape[0])
+      num_frames = int(joint_pos.shape[0])
       motion_num_frames.append(num_frames)
       motion_lengths_s.append(dt * float(num_frames - 1))
       motion_weights.append(float(motion_weight))
-      root_pos_list.append(root_pos)
-      root_rot_list.append(root_rot)
-      root_vel_list.append(root_vel)
-      root_ang_vel_list.append(root_ang_vel)
-      dof_pos_list.append(dof_pos)
-      dof_vel_list.append(dof_vel)
-      local_body_pos_list.append(local_body_pos)
-      local_body_lin_vel_list.append(local_body_lin_vel)
-      if local_body_rot is not None and local_body_ang_vel is not None:
-        local_body_rot_list.append(local_body_rot)
-        local_body_ang_vel_list.append(local_body_ang_vel)
+      joint_pos_list.append(joint_pos)
+      joint_vel_list.append(joint_vel)
+      body_pos_w_list.append(body_pos_w)
+      body_quat_w_list.append(body_quat_w)
+      body_lin_vel_w_list.append(body_lin_vel_w)
+      body_ang_vel_w_list.append(body_ang_vel_w)
 
     assert self.body_names is not None
     assert self._num_dof is not None
+    assert self._num_bodies is not None
 
     self.motion_num_frames = torch.tensor(
       motion_num_frames, dtype=torch.long, device=self.device
@@ -236,70 +393,43 @@ class PklMotionLibrary:
     self.motion_weights = torch.tensor(
       motion_weights, dtype=torch.float32, device=self.device
     )
+    if torch.all(self.motion_weights <= 0):
+      self.motion_weights = torch.ones_like(self.motion_weights)
     self.motion_weights = self.motion_weights / self.motion_weights.sum()
 
     lengths_shifted = self.motion_num_frames.roll(1)
     lengths_shifted[0] = 0
     self.motion_start_idx = lengths_shifted.cumsum(0)
 
-    self.root_pos = torch.cat(root_pos_list, dim=0)
-    self.root_rot = torch.cat(root_rot_list, dim=0)
-    self.root_vel = torch.cat(root_vel_list, dim=0)
-    self.root_ang_vel = torch.cat(root_ang_vel_list, dim=0)
-    self.dof_pos = torch.cat(dof_pos_list, dim=0)
-    self.dof_vel = torch.cat(dof_vel_list, dim=0)
-    self.local_body_pos = torch.cat(local_body_pos_list, dim=0)
-    self.local_body_lin_vel = torch.cat(local_body_lin_vel_list, dim=0)
-
-    if self._has_local_body_rot and len(local_body_rot_list) > 0:
-      self.local_body_rot = torch.cat(local_body_rot_list, dim=0)
-      self.local_body_ang_vel = torch.cat(local_body_ang_vel_list, dim=0)
-    else:
-      self.local_body_rot = None
-      self.local_body_ang_vel = None
-      warnings.warn(
-        "PKL motion data has no `local_body_rot`; body orientations will use root rotation only.",
-        stacklevel=2,
-      )
+    self.joint_pos = torch.cat(joint_pos_list, dim=0)
+    self.joint_vel = torch.cat(joint_vel_list, dim=0)
+    self.body_pos_w = torch.cat(body_pos_w_list, dim=0)
+    self.body_quat_w = torch.cat(body_quat_w_list, dim=0)
+    self.body_lin_vel_w = torch.cat(body_lin_vel_w_list, dim=0)
+    self.body_ang_vel_w = torch.cat(body_ang_vel_w_list, dim=0)
 
   @staticmethod
-  def _env_int(name: str, default: int) -> int:
-    value = os.environ.get(name)
-    if value is None:
-      return default
-    try:
-      return int(value)
-    except ValueError:
-      return default
-
-  @classmethod
-  def _should_show_progress(cls, show_progress: bool | None) -> bool:
-    if show_progress is not None:
-      return show_progress
-    return (
-      cls._env_int("RANK", 0) == 0
-      and cls._env_int("LOCAL_RANK", 0) == 0
-      and sys.stderr.isatty()
-    )
+  def _extract_fps(data) -> float:
+    if "fps" not in data:
+      return 30.0
+    fps_value = np.asarray(data["fps"]).reshape(-1)
+    if fps_value.size == 0:
+      return 30.0
+    return float(fps_value[0])
 
   @classmethod
   def _iter_motion_entries(
     cls,
     motion_files: list[Path],
     per_motion_weights: list[float],
-    per_motion_quat_conventions: list[Literal["xyzw", "wxyz"]],
     show_progress: bool | None,
   ):
-    entries = list(zip(motion_files, per_motion_weights, per_motion_quat_conventions))
-    if (
-      cls._should_show_progress(show_progress)
-      and tqdm is not None
-      and len(entries) > 1
-    ):
+    entries = list(zip(motion_files, per_motion_weights))
+    if _should_show_progress(show_progress) and tqdm is not None and len(entries) > 1:
       return tqdm(
         entries,
         total=len(entries),
-        desc="Loading motion PKLs",
+        desc="Loading motion NPZs",
         unit="file",
         leave=False,
         dynamic_ncols=True,
@@ -309,25 +439,25 @@ class PklMotionLibrary:
   @classmethod
   def _resolve_motion_entries(
     cls, motion_source: str
-  ) -> tuple[list[Path], list[float], list[Literal["xyzw", "wxyz"]]]:
+  ) -> tuple[list[Path], list[float]]:
     source = Path(motion_source)
     if source.suffix in (".yaml", ".yml") and source.is_file():
       return cls._resolve_motion_entries_from_yaml(source)
     if source.is_dir():
-      files = sorted(source.rglob("*.pkl"))
-      return files, [1.0] * len(files), ["xyzw"] * len(files)
-    if source.suffix == ".pkl" and source.is_file():
-      return [source], [1.0], ["xyzw"]
+      files = sorted(source.rglob("*.npz"))
+      return files, [1.0] * len(files)
+    if source.suffix == ".npz" and source.is_file():
+      return [source], [1.0]
     raise ValueError(
-      "PKL motion source must be an existing .pkl/.yaml file or directory. "
+      "NPZ motion source must be an existing .npz/.yaml file or directory. "
       f"Got: {motion_source}"
     )
 
   @classmethod
   def _resolve_motion_entries_from_yaml(
     cls, yaml_path: Path
-  ) -> tuple[list[Path], list[float], list[Literal["xyzw", "wxyz"]]]:
-    config = cls._load_yaml_config(yaml_path)
+  ) -> tuple[list[Path], list[float]]:
+    config = _load_yaml_config(yaml_path)
     root_path_raw = config.get("root_path", ".")
     if not isinstance(root_path_raw, str):
       raise ValueError(
@@ -337,21 +467,15 @@ class PklMotionLibrary:
     if not root_path.is_absolute():
       root_path = (yaml_path.parent / root_path).resolve()
 
-    default_quat_convention = cls._normalize_quat_convention(
-      config.get("default_quat_convention", "xyzw"),
-      context=f"{yaml_path} top-level `default_quat_convention`",
-    )
-
     subfolders = config.get("subfolders")
     if not isinstance(subfolders, list):
       raise ValueError(
         f"`subfolders` must be a list in {yaml_path}. "
-        "Expected entries like `{name: cnrs, weight: 1.0, quat_convention: xyzw}`."
+        "Expected entries like `{name: cnrs, weight: 1.0}`."
       )
 
     motion_files: list[Path] = []
     motion_weights: list[float] = []
-    motion_quat_conventions: list[Literal["xyzw", "wxyz"]] = []
     for entry in subfolders:
       if not isinstance(entry, dict):
         raise ValueError(f"Invalid subfolder entry in {yaml_path}: {entry}")
@@ -374,218 +498,26 @@ class PklMotionLibrary:
           f"Weight for subfolder `{folder_name}` must be non-negative in {yaml_path}."
         )
 
-      quat_convention = cls._normalize_quat_convention(
-        entry.get("quat_convention", default_quat_convention),
-        context=f"{yaml_path} subfolder `{folder_name}` `quat_convention`",
-      )
-
       folder_path = root_path / folder_name
       if not folder_path.exists():
         raise ValueError(
           f"Configured subfolder does not exist: {folder_path} (from {yaml_path})"
         )
 
-      folder_files = sorted(folder_path.rglob("*.pkl"))
+      folder_files = sorted(folder_path.rglob("*.npz"))
       if len(folder_files) == 0:
         warnings.warn(
-          f"No .pkl motions found in configured subfolder: {folder_path}",
+          f"No .npz motions found in configured subfolder: {folder_path}",
           stacklevel=2,
         )
         continue
 
       motion_files.extend(folder_files)
       motion_weights.extend([weight] * len(folder_files))
-      motion_quat_conventions.extend([quat_convention] * len(folder_files))
 
     if len(motion_files) == 0:
-      raise ValueError(f"No .pkl files resolved from YAML config: {yaml_path}")
-    return motion_files, motion_weights, motion_quat_conventions
-
-  @classmethod
-  def _load_yaml_config(cls, yaml_path: Path) -> dict[str, object]:
-    try:
-      import yaml  # type: ignore[import-not-found]
-    except ModuleNotFoundError:
-      return cls._parse_minimal_yaml(yaml_path.read_text(encoding="utf-8"), yaml_path)
-
-    with open(yaml_path, "r", encoding="utf-8") as f:
-      data = yaml.safe_load(f)
-    if not isinstance(data, dict):
-      raise ValueError(f"YAML config must be a mapping at top level: {yaml_path}")
-    return data
-
-  @staticmethod
-  def _parse_yaml_scalar(value: str) -> object:
-    value = value.strip()
-    if value == "":
-      return ""
-    if len(value) >= 2 and value[0] == value[-1] and value[0] in ("'", '"'):
-      return value[1:-1]
-    lower = value.lower()
-    if lower in ("true", "false"):
-      return lower == "true"
-    try:
-      return int(value)
-    except ValueError:
-      pass
-    try:
-      return float(value)
-    except ValueError:
-      pass
-    return value
-
-  @classmethod
-  def _parse_minimal_yaml(cls, text: str, yaml_path: Path) -> dict[str, object]:
-    """Parse a minimal YAML subset used by CLAMP motion configs.
-
-    Supported structure:
-      root_path: ...
-      subfolders:
-        - name: ...
-          weight: ...
-    """
-    cfg: dict[str, object] = {}
-    active_list_key: str | None = None
-    current_item: dict[str, object] | None = None
-
-    for raw_line in text.splitlines():
-      line = raw_line.split("#", 1)[0].rstrip()
-      if not line.strip():
-        continue
-      stripped = line.lstrip()
-      indent = len(line) - len(stripped)
-
-      if indent == 0 and stripped.endswith(":"):
-        key = stripped[:-1].strip()
-        cfg[key] = []
-        active_list_key = key
-        current_item = None
-        continue
-
-      if indent == 0 and ":" in stripped:
-        key, value = stripped.split(":", 1)
-        cfg[key.strip()] = cls._parse_yaml_scalar(value)
-        active_list_key = None
-        current_item = None
-        continue
-
-      if active_list_key is None:
-        raise ValueError(
-          f"Unsupported YAML structure in {yaml_path}: line `{raw_line}`"
-        )
-
-      assert isinstance(cfg[active_list_key], list)
-      if stripped.startswith("-"):
-        item_content = stripped[1:].strip()
-        current_item = {}
-        cfg[active_list_key].append(current_item)
-        if item_content:
-          if ":" not in item_content:
-            raise ValueError(
-              f"Invalid list item format in {yaml_path}: line `{raw_line}`"
-            )
-          key, value = item_content.split(":", 1)
-          current_item[key.strip()] = cls._parse_yaml_scalar(value)
-      else:
-        if current_item is None or ":" not in stripped:
-          raise ValueError(
-            f"Invalid nested YAML entry in {yaml_path}: line `{raw_line}`"
-          )
-        key, value = stripped.split(":", 1)
-        current_item[key.strip()] = cls._parse_yaml_scalar(value)
-
-    return cfg
-
-  @staticmethod
-  def _finite_difference(values: torch.Tensor, dt: float) -> torch.Tensor:
-    vel = torch.zeros_like(values)
-    if values.shape[0] > 1:
-      vel[:-1] = (values[1:] - values[:-1]) / max(dt, 1e-6)
-      vel[-1] = vel[-2]
-    return vel
-
-  @staticmethod
-  def _quat_xyzw_to_wxyz(quat: torch.Tensor) -> torch.Tensor:
-    if quat.shape[-1] != 4:
-      raise ValueError(
-        "Expected quaternion tensor with last dimension 4, "
-        f"got shape {tuple(quat.shape)}"
-      )
-    return quat.roll(1, dims=-1)
-
-  @classmethod
-  def _to_mjlab_quat(
-    cls, quat: torch.Tensor, quat_convention: Literal["xyzw", "wxyz"]
-  ) -> torch.Tensor:
-    if quat_convention == "xyzw":
-      quat = cls._quat_xyzw_to_wxyz(quat)
-    elif quat_convention != "wxyz":
-      raise ValueError(
-        "Invalid quaternion convention. Expected 'xyzw' or 'wxyz', "
-        f"got: {quat_convention}"
-      )
-    return cls._normalize_quaternion(quat)
-
-  @staticmethod
-  def _normalize_quat_convention(
-    value: object, *, context: str
-  ) -> Literal["xyzw", "wxyz"]:
-    if not isinstance(value, str):
-      raise ValueError(
-        f"Quaternion convention must be a string in {context}. "
-        f"Got: {type(value)}"
-      )
-    normalized = value.strip().lower()
-    if normalized == "xyzw":
-      return "xyzw"
-    if normalized == "wxyz":
-      return "wxyz"
-    raise ValueError(
-      f"Invalid quaternion convention in {context}: {value}. "
-      "Expected one of: 'xyzw', 'wxyz'."
-    )
-
-  @staticmethod
-  def _normalize_quaternion(quat: torch.Tensor) -> torch.Tensor:
-    return quat / torch.clamp(torch.norm(quat, dim=-1, keepdim=True), min=1.0e-8)
-
-  @staticmethod
-  def _quat_slerp_batch(
-    q0: torch.Tensor, q1: torch.Tensor, blend: torch.Tensor
-  ) -> torch.Tensor:
-    """Vectorized quaternion slerp for tensors with matching shape [..., 4]."""
-    q0 = q0 / torch.clamp(torch.norm(q0, dim=-1, keepdim=True), min=1e-8)
-    q1 = q1 / torch.clamp(torch.norm(q1, dim=-1, keepdim=True), min=1e-8)
-    blend = blend.unsqueeze(-1)
-
-    dot = torch.sum(q0 * q1, dim=-1, keepdim=True)
-    q1 = torch.where(dot < 0.0, -q1, q1)
-    dot = torch.abs(dot).clamp(max=1.0)
-
-    close = dot > 0.9995
-    theta_0 = torch.acos(dot)
-    sin_theta_0 = torch.sin(theta_0)
-    theta = theta_0 * blend
-    sin_theta = torch.sin(theta)
-
-    s0 = torch.sin(theta_0 - theta) / torch.clamp(sin_theta_0, min=1e-8)
-    s1 = sin_theta / torch.clamp(sin_theta_0, min=1e-8)
-    slerped = s0 * q0 + s1 * q1
-
-    lerped = (1.0 - blend) * q0 + blend * q1
-    lerped = lerped / torch.clamp(torch.norm(lerped, dim=-1, keepdim=True), min=1e-8)
-    return torch.where(close, lerped, slerped)
-
-  @classmethod
-  def _quat_angular_velocity(cls, quats: torch.Tensor, dt: float) -> torch.Tensor:
-    vel = torch.zeros((*quats.shape[:-1], 3), dtype=quats.dtype, device=quats.device)
-    if quats.shape[0] > 1:
-      q_prev = quats[:-1]
-      q_next = quats[1:]
-      q_rel = quat_mul(q_next, quat_conjugate(q_prev))
-      vel[:-1] = axis_angle_from_quat(q_rel) / max(dt, 1e-6)
-      vel[-1] = vel[-2]
-    return vel
+      raise ValueError(f"No .npz files resolved from YAML config: {yaml_path}")
+    return motion_files, motion_weights
 
   def num_motions(self) -> int:
     return int(self.motion_num_frames.shape[0])
@@ -605,7 +537,6 @@ class PklMotionLibrary:
     self, motion_ids: torch.Tensor, motion_times: torch.Tensor
   ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
     lengths_s = self.get_motion_length(motion_ids)
-    # Clamp to avoid querying past the last valid interpolation segment.
     motion_times = torch.clamp(motion_times, min=0.0)
     motion_times = torch.minimum(motion_times, torch.clamp(lengths_s - 1e-6, min=0.0))
 
@@ -627,67 +558,42 @@ class PklMotionLibrary:
   ) -> MotionFrameBatch:
     frame_idx0, frame_idx1, blend = self._calc_frame_blend(motion_ids, motion_times)
 
-    root_pos0 = self.root_pos[frame_idx0]
-    root_pos1 = self.root_pos[frame_idx1]
-    root_rot0 = self.root_rot[frame_idx0]
-    root_rot1 = self.root_rot[frame_idx1]
-    root_vel = self.root_vel[frame_idx0]
-    root_ang_vel = self.root_ang_vel[frame_idx0]
+    joint_pos0 = self.joint_pos[frame_idx0]
+    joint_pos1 = self.joint_pos[frame_idx1]
+    joint_vel = self.joint_vel[frame_idx0]
 
-    dof_pos0 = self.dof_pos[frame_idx0]
-    dof_pos1 = self.dof_pos[frame_idx1]
-    dof_vel = self.dof_vel[frame_idx0]
+    body_pos0 = self.body_pos_w[frame_idx0]
+    body_pos1 = self.body_pos_w[frame_idx1]
+    body_quat0 = self.body_quat_w[frame_idx0]
+    body_quat1 = self.body_quat_w[frame_idx1]
+    body_lin_vel = self.body_lin_vel_w[frame_idx0]
+    body_ang_vel = self.body_ang_vel_w[frame_idx0]
 
-    local_body_pos0 = self.local_body_pos[frame_idx0]
-    local_body_pos1 = self.local_body_pos[frame_idx1]
-    local_body_lin_vel = self.local_body_lin_vel[frame_idx0]
-
+    blend_joint = blend.unsqueeze(-1)
     blend_body = blend.unsqueeze(-1).unsqueeze(-1)
-    root_pos = (1.0 - blend.unsqueeze(-1)) * root_pos0 + blend.unsqueeze(-1) * root_pos1
-    root_rot = self._quat_slerp_batch(root_rot0, root_rot1, blend)
-    dof_pos = (1.0 - blend.unsqueeze(-1)) * dof_pos0 + blend.unsqueeze(-1) * dof_pos1
-    local_body_pos = (1.0 - blend_body) * local_body_pos0 + blend_body * local_body_pos1
+    joint_pos = (1.0 - blend_joint) * joint_pos0 + blend_joint * joint_pos1
+    body_pos_w = (1.0 - blend_body) * body_pos0 + blend_body * body_pos1
 
-    num_bodies = local_body_pos.shape[1]
-    root_rot_expand = root_rot.unsqueeze(1).expand(-1, num_bodies, -1)
-    rel_body_pos_w = quat_apply(root_rot_expand, local_body_pos)
-    body_pos_w = root_pos.unsqueeze(1) + rel_body_pos_w
-
-    if self.local_body_rot is not None and self.local_body_ang_vel is not None:
-      local_body_rot0 = self.local_body_rot[frame_idx0]
-      local_body_rot1 = self.local_body_rot[frame_idx1]
-      flat_rot0 = local_body_rot0.reshape(-1, 4)
-      flat_rot1 = local_body_rot1.reshape(-1, 4)
-      flat_blend = blend.unsqueeze(-1).expand(-1, num_bodies).reshape(-1)
-      local_body_rot = self._quat_slerp_batch(flat_rot0, flat_rot1, flat_blend).reshape(
-        motion_ids.shape[0], num_bodies, 4
-      )
-      body_quat_w = quat_mul(root_rot_expand, local_body_rot)
-      body_ang_vel_w = root_ang_vel.unsqueeze(1) + quat_apply(
-        root_rot_expand, self.local_body_ang_vel[frame_idx0]
-      )
-    else:
-      body_quat_w = root_rot_expand
-      body_ang_vel_w = root_ang_vel.unsqueeze(1).expand(-1, num_bodies, -1)
-
-    body_lin_vel_w = (
-      root_vel.unsqueeze(1)
-      + quat_apply(root_rot_expand, local_body_lin_vel)
-      + torch.cross(root_ang_vel.unsqueeze(1).expand(-1, num_bodies, -1), rel_body_pos_w, dim=-1)
-    )
+    num_bodies = body_pos_w.shape[1]
+    body_quat_w = _quat_slerp_batch(
+      body_quat0.reshape(-1, 4),
+      body_quat1.reshape(-1, 4),
+      blend.unsqueeze(-1).expand(-1, num_bodies).reshape(-1),
+    ).reshape(motion_ids.shape[0], num_bodies, 4)
 
     return MotionFrameBatch(
-      joint_pos=dof_pos,
-      joint_vel=dof_vel,
+      joint_pos=joint_pos,
+      joint_vel=joint_vel,
       body_pos_w=body_pos_w,
       body_quat_w=body_quat_w,
-      body_lin_vel_w=body_lin_vel_w,
-      body_ang_vel_w=body_ang_vel_w,
-      anchor_pos_w=root_pos,
-      anchor_quat_w=root_rot,
-      anchor_lin_vel_w=root_vel,
-      anchor_ang_vel_w=root_ang_vel,
+      body_lin_vel_w=body_lin_vel,
+      body_ang_vel_w=body_ang_vel,
+      anchor_pos_w=body_pos_w[:, 0],
+      anchor_quat_w=body_quat_w[:, 0],
+      anchor_lin_vel_w=body_lin_vel[:, 0],
+      anchor_ang_vel_w=body_ang_vel[:, 0],
     )
+
 
 class MotionCommand(CommandTerm):
   cfg: MotionCommandCfg
@@ -697,20 +603,24 @@ class MotionCommand(CommandTerm):
     super().__init__(cfg, env)
 
     self.robot: Entity = env.scene[cfg.entity_name]
-    self._uses_pkl_motion = self._is_pkl_motion_source(self.cfg.motion_file)
+    self._uses_motion_library = False
 
     self.motion: MotionLoader | None = None
-    self.motion_lib: PklMotionLibrary | None = None
+    self.motion_lib: NpzMotionLibrary | None = None
     self._current_motion_frame: MotionFrameBatch | None = None
 
-    if self._uses_pkl_motion:
-      self.motion_lib = PklMotionLibrary(
+    source = Path(self.cfg.motion_file)
+    if source.suffix == ".npz":
+      if not source.is_file():
+        raise ValueError(f"Motion npz file does not exist: {self.cfg.motion_file}")
+      self.motion = MotionLoader(self.cfg.motion_file, device=self.device)
+    else:
+      self.motion_lib = NpzMotionLibrary(
         self.cfg.motion_file,
         device=self.device,
         show_progress=self.cfg.show_motion_load_progress,
       )
-    else:
-      self.motion = MotionLoader(self.cfg.motion_file, device=self.device)
+      self._uses_motion_library = True
 
     motion_body_names = self._resolve_motion_body_names()
     motion_name_to_index = self._build_name_to_index(motion_body_names, source="motion")
@@ -756,7 +666,7 @@ class MotionCommand(CommandTerm):
     )
     self.body_quat_relative_w[:, :, 0] = 1.0
 
-    if self._uses_pkl_motion:
+    if self._uses_motion_library:
       assert self.motion_lib is not None
       max_motion_len_s = float(torch.max(self.motion_lib.motion_lengths_s).item())
       self.bin_count = max(int(max_motion_len_s / max(env.step_dt, 1e-6)) + 1, 1)
@@ -765,12 +675,34 @@ class MotionCommand(CommandTerm):
       assert self.motion is not None
       self.bin_count = int(self.motion.time_step_total // (1 / env.step_dt)) + 1
 
-    self.bin_failed_count = torch.zeros(
-      self.bin_count, dtype=torch.float, device=self.device
-    )
-    self._current_bin_failed = torch.zeros(
-      self.bin_count, dtype=torch.float, device=self.device
-    )
+    self.bin_failed_count: torch.Tensor | None = None
+    self._current_bin_failed: torch.Tensor | None = None
+    self.motion_failed_count: torch.Tensor | None = None
+    self._current_motion_failed: torch.Tensor | None = None
+    self.phase_failed_count: torch.Tensor | None = None
+    self._current_phase_failed: torch.Tensor | None = None
+    if self._uses_motion_library:
+      assert self.motion_lib is not None
+      num_motions = self.motion_lib.num_motions()
+      self.motion_failed_count = torch.zeros(
+        num_motions, dtype=torch.float, device=self.device
+      )
+      self._current_motion_failed = torch.zeros(
+        num_motions, dtype=torch.float, device=self.device
+      )
+      self.phase_failed_count = torch.zeros(
+        (num_motions, self.bin_count), dtype=torch.float, device=self.device
+      )
+      self._current_phase_failed = torch.zeros(
+        (num_motions, self.bin_count), dtype=torch.float, device=self.device
+      )
+    else:
+      self.bin_failed_count = torch.zeros(
+        self.bin_count, dtype=torch.float, device=self.device
+      )
+      self._current_bin_failed = torch.zeros(
+        self.bin_count, dtype=torch.float, device=self.device
+      )
     self.kernel = torch.tensor(
       [self.cfg.adaptive_lambda**i for i in range(self.cfg.adaptive_kernel_size)],
       device=self.device,
@@ -792,15 +724,28 @@ class MotionCommand(CommandTerm):
     self.metrics["sampling_entropy"] = torch.zeros(self.num_envs, device=self.device)
     self.metrics["sampling_top1_prob"] = torch.zeros(self.num_envs, device=self.device)
     self.metrics["sampling_top1_bin"] = torch.zeros(self.num_envs, device=self.device)
+    self.metrics["sampling_motion_entropy"] = torch.zeros(
+      self.num_envs, device=self.device
+    )
+    self.metrics["sampling_motion_top1_prob"] = torch.zeros(
+      self.num_envs, device=self.device
+    )
+    self.metrics["sampling_motion_top1_idx"] = torch.zeros(
+      self.num_envs, device=self.device
+    )
+    self.metrics["sampling_phase_entropy"] = torch.zeros(
+      self.num_envs, device=self.device
+    )
+    self.metrics["sampling_phase_top1_prob"] = torch.zeros(
+      self.num_envs, device=self.device
+    )
+    self.metrics["sampling_phase_top1_bin"] = torch.zeros(
+      self.num_envs, device=self.device
+    )
 
     # Ghost model created lazily on first visualization
     self._ghost_model: mujoco.MjModel | None = None
     self._ghost_color = np.array(cfg.viz.ghost_color, dtype=np.float32)
-
-  @staticmethod
-  def _is_pkl_motion_source(motion_source: str) -> bool:
-    source = Path(motion_source)
-    return source.is_dir() or source.suffix in (".pkl", ".yaml", ".yml")
 
   def _resolve_motion_body_names(self) -> tuple[str, ...]:
     """Resolve body names for the motion tensors.
@@ -810,8 +755,9 @@ class MotionCommand(CommandTerm):
     2) Names explicitly provided in the config (`motion_body_names`).
     3) Fallback to robot body names if tensor count matches exactly.
     """
-    if self._uses_pkl_motion:
+    if self._uses_motion_library:
       assert self.motion_lib is not None
+      assert self.motion_lib.body_names is not None
       motion_tensor_body_count = len(self.motion_lib.body_names)
       file_motion_body_names = self.motion_lib.body_names
     else:
@@ -878,7 +824,7 @@ class MotionCommand(CommandTerm):
     return self.time_steps.to(torch.float32) * self._env.step_dt + self.motion_time_offsets
 
   def _refresh_motion_frame(self) -> None:
-    if not self._uses_pkl_motion:
+    if not self._uses_motion_library:
       return
     assert self.motion_lib is not None
     self._current_motion_frame = self.motion_lib.calc_motion_frame(
@@ -890,8 +836,8 @@ class MotionCommand(CommandTerm):
     if len(step_offsets) == 0:
       raise ValueError("`step_offsets` must contain at least one entry.")
 
-    if self._uses_pkl_motion:
-      return self._query_motion_frames_pkl(step_offsets)
+    if self._uses_motion_library:
+      return self._query_motion_frames_library(step_offsets)
     return self._query_motion_frames_npz(step_offsets)
 
   def _query_motion_frames_npz(self, step_offsets: tuple[int, ...]) -> MotionFrameBatch:
@@ -928,7 +874,7 @@ class MotionCommand(CommandTerm):
       anchor_ang_vel_w=anchor_ang_vel.reshape(self.num_envs, num_steps, 3),
     )
 
-  def _query_motion_frames_pkl(self, step_offsets: tuple[int, ...]) -> MotionFrameBatch:
+  def _query_motion_frames_library(self, step_offsets: tuple[int, ...]) -> MotionFrameBatch:
     assert self.motion_lib is not None
 
     offsets = torch.tensor(step_offsets, dtype=torch.float32, device=self.device)
@@ -975,7 +921,7 @@ class MotionCommand(CommandTerm):
 
   @property
   def joint_pos(self) -> torch.Tensor:
-    if self._uses_pkl_motion:
+    if self._uses_motion_library:
       assert self._current_motion_frame is not None
       return self._current_motion_frame.joint_pos
     assert self.motion is not None
@@ -983,7 +929,7 @@ class MotionCommand(CommandTerm):
 
   @property
   def joint_vel(self) -> torch.Tensor:
-    if self._uses_pkl_motion:
+    if self._uses_motion_library:
       assert self._current_motion_frame is not None
       return self._current_motion_frame.joint_vel
     assert self.motion is not None
@@ -991,7 +937,7 @@ class MotionCommand(CommandTerm):
 
   @property
   def body_pos_w(self) -> torch.Tensor:
-    if self._uses_pkl_motion:
+    if self._uses_motion_library:
       assert self._current_motion_frame is not None
       return (
         self._current_motion_frame.body_pos_w[:, self.motion_body_indexes]
@@ -1003,7 +949,7 @@ class MotionCommand(CommandTerm):
 
   @property
   def body_quat_w(self) -> torch.Tensor:
-    if self._uses_pkl_motion:
+    if self._uses_motion_library:
       assert self._current_motion_frame is not None
       return self._current_motion_frame.body_quat_w[:, self.motion_body_indexes]
     assert self.motion is not None
@@ -1011,7 +957,7 @@ class MotionCommand(CommandTerm):
 
   @property
   def body_lin_vel_w(self) -> torch.Tensor:
-    if self._uses_pkl_motion:
+    if self._uses_motion_library:
       assert self._current_motion_frame is not None
       return self._current_motion_frame.body_lin_vel_w[:, self.motion_body_indexes]
     assert self.motion is not None
@@ -1019,7 +965,7 @@ class MotionCommand(CommandTerm):
 
   @property
   def body_ang_vel_w(self) -> torch.Tensor:
-    if self._uses_pkl_motion:
+    if self._uses_motion_library:
       assert self._current_motion_frame is not None
       return self._current_motion_frame.body_ang_vel_w[:, self.motion_body_indexes]
     assert self.motion is not None
@@ -1027,7 +973,7 @@ class MotionCommand(CommandTerm):
 
   @property
   def anchor_pos_w(self) -> torch.Tensor:
-    if self._uses_pkl_motion:
+    if self._uses_motion_library:
       assert self._current_motion_frame is not None
       return (
         self._current_motion_frame.body_pos_w[:, self.motion_anchor_body_index]
@@ -1041,7 +987,7 @@ class MotionCommand(CommandTerm):
 
   @property
   def anchor_quat_w(self) -> torch.Tensor:
-    if self._uses_pkl_motion:
+    if self._uses_motion_library:
       assert self._current_motion_frame is not None
       return self._current_motion_frame.body_quat_w[:, self.motion_anchor_body_index]
     assert self.motion is not None
@@ -1049,7 +995,7 @@ class MotionCommand(CommandTerm):
 
   @property
   def anchor_lin_vel_w(self) -> torch.Tensor:
-    if self._uses_pkl_motion:
+    if self._uses_motion_library:
       assert self._current_motion_frame is not None
       return self._current_motion_frame.body_lin_vel_w[:, self.motion_anchor_body_index]
     assert self.motion is not None
@@ -1057,7 +1003,7 @@ class MotionCommand(CommandTerm):
 
   @property
   def anchor_ang_vel_w(self) -> torch.Tensor:
-    if self._uses_pkl_motion:
+    if self._uses_motion_library:
       assert self._current_motion_frame is not None
       return self._current_motion_frame.body_ang_vel_w[:, self.motion_anchor_body_index]
     assert self.motion is not None
@@ -1139,13 +1085,118 @@ class MotionCommand(CommandTerm):
     )
 
   def _adaptive_sampling(self, env_ids: torch.Tensor):
-    if self._uses_pkl_motion:
-      # Adaptive bins are defined over a single timeline; fallback to uniform for PKL sets.
-      self._uniform_sampling(env_ids)
+    if self._uses_motion_library:
+      assert self.motion_lib is not None
+      assert self.motion_failed_count is not None
+      assert self._current_motion_failed is not None
+      assert self.phase_failed_count is not None
+      assert self._current_phase_failed is not None
+
+      self._current_motion_failed.zero_()
+      self._current_phase_failed.zero_()
+
+      episode_failed = self._env.termination_manager.terminated[env_ids]
+      if torch.any(episode_failed):
+        failed_env_ids = env_ids[episode_failed]
+        failed_motion_ids = self.motion_ids[failed_env_ids]
+        failed_times = self._current_times_s()[failed_env_ids]
+        failed_lengths = self.motion_lib.get_motion_length(failed_motion_ids)
+        failed_phase_bins = torch.clamp(
+          (failed_times / torch.clamp(failed_lengths, min=1.0e-6) * self.bin_count).long(),
+          0,
+          self.bin_count - 1,
+        )
+        self._current_motion_failed[:] = torch.bincount(
+          failed_motion_ids, minlength=self.motion_lib.num_motions()
+        ).to(dtype=torch.float32)
+        phase_flat_idx = failed_motion_ids * self.bin_count + failed_phase_bins
+        self._current_phase_failed[:] = torch.bincount(
+          phase_flat_idx, minlength=self.motion_lib.num_motions() * self.bin_count
+        ).to(dtype=torch.float32).reshape(self.motion_lib.num_motions(), self.bin_count)
+
+      mix_ratio = float(min(max(self.cfg.adaptive_uniform_ratio, 0.0), 1.0))
+      hard_motion_prob = self.motion_failed_count + 1.0 / float(self.motion_lib.num_motions())
+      hard_motion_prob = hard_motion_prob / hard_motion_prob.sum()
+      motion_probabilities = (
+        (1.0 - mix_ratio) * hard_motion_prob + mix_ratio * self.motion_lib.motion_weights
+      )
+      motion_probabilities = motion_probabilities / motion_probabilities.sum()
+
+      hard_phase_prob = self.phase_failed_count + 1.0 / float(self.bin_count)
+      hard_phase_prob = torch.nn.functional.pad(
+        hard_phase_prob.unsqueeze(1),
+        (0, self.cfg.adaptive_kernel_size - 1),
+        mode="replicate",
+      )
+      hard_phase_prob = torch.nn.functional.conv1d(
+        hard_phase_prob, self.kernel.view(1, 1, -1)
+      ).squeeze(1)
+      hard_phase_prob = hard_phase_prob / torch.clamp(
+        hard_phase_prob.sum(dim=1, keepdim=True), min=1.0e-8
+      )
+
+      uniform_phase_prob = torch.full_like(hard_phase_prob, 1.0 / float(self.bin_count))
+      phase_probabilities = (
+        (1.0 - mix_ratio) * hard_phase_prob + mix_ratio * uniform_phase_prob
+      )
+      phase_probabilities = phase_probabilities / torch.clamp(
+        phase_probabilities.sum(dim=1, keepdim=True), min=1.0e-8
+      )
+
+      sampled_motion_ids = torch.multinomial(
+        motion_probabilities, len(env_ids), replacement=True
+      )
+      sampled_phase_prob = phase_probabilities[sampled_motion_ids]
+      sampled_bins = torch.multinomial(sampled_phase_prob, 1, replacement=True).squeeze(-1)
+      sampled_phase = (
+        sampled_bins
+        + sample_uniform(0.0, 1.0, (len(env_ids),), device=self.device)
+      ) / self.bin_count
+      sampled_lengths = self.motion_lib.get_motion_length(sampled_motion_ids)
+      sampled_offsets = sampled_phase * sampled_lengths
+      sampled_offsets = torch.minimum(
+        sampled_offsets,
+        torch.clamp(sampled_lengths - 1.0e-6, min=0.0),
+      )
+
+      self.motion_ids[env_ids] = sampled_motion_ids
+      self.motion_time_offsets[env_ids] = sampled_offsets
+      self.time_steps[env_ids] = 0
+      self._refresh_motion_frame()
+
+      motion_top_prob, motion_top_idx = motion_probabilities.max(dim=0)
+      phase_top_prob, phase_top_idx = phase_probabilities[motion_top_idx].max(dim=0)
+      if self.motion_lib.num_motions() > 1:
+        motion_entropy = -(
+          motion_probabilities * (motion_probabilities + 1.0e-12).log()
+        ).sum() / math.log(self.motion_lib.num_motions())
+      else:
+        motion_entropy = torch.tensor(1.0, device=self.device)
+      if self.bin_count > 1:
+        phase_entropy = -(
+          phase_probabilities * (phase_probabilities + 1.0e-12).log()
+        ).sum(dim=1).mean() / math.log(self.bin_count)
+      else:
+        phase_entropy = torch.tensor(1.0, device=self.device)
+
+      self.metrics["sampling_motion_entropy"][:] = motion_entropy
+      self.metrics["sampling_motion_top1_prob"][:] = motion_top_prob
+      self.metrics["sampling_motion_top1_idx"][:] = (
+        motion_top_idx.float() / self.motion_lib.num_motions()
+      )
+      self.metrics["sampling_phase_entropy"][:] = phase_entropy
+      self.metrics["sampling_phase_top1_prob"][:] = phase_top_prob
+      self.metrics["sampling_phase_top1_bin"][:] = phase_top_idx.float() / self.bin_count
+      self.metrics["sampling_entropy"][:] = 0.5 * (motion_entropy + phase_entropy)
+      self.metrics["sampling_top1_prob"][:] = motion_top_prob * phase_top_prob
+      self.metrics["sampling_top1_bin"][:] = phase_top_idx.float() / self.bin_count
       return
 
     assert self.motion is not None
+    assert self.bin_failed_count is not None
+    assert self._current_bin_failed is not None
     episode_failed = self._env.termination_manager.terminated[env_ids]
+    self._current_bin_failed.zero_()
     if torch.any(episode_failed):
       current_bin_index = torch.clamp(
         (self.time_steps * self.bin_count) // max(self.motion.time_step_total, 1),
@@ -1180,23 +1231,52 @@ class MotionCommand(CommandTerm):
     H = -(sampling_probabilities * (sampling_probabilities + 1e-12).log()).sum()
     H_norm = H / math.log(self.bin_count)
     pmax, imax = sampling_probabilities.max(dim=0)
+    self.metrics["sampling_motion_entropy"][:] = 0.0
+    self.metrics["sampling_motion_top1_prob"][:] = 0.0
+    self.metrics["sampling_motion_top1_idx"][:] = 0.0
+    self.metrics["sampling_phase_entropy"][:] = H_norm
+    self.metrics["sampling_phase_top1_prob"][:] = pmax
+    self.metrics["sampling_phase_top1_bin"][:] = imax.float() / self.bin_count
     self.metrics["sampling_entropy"][:] = H_norm
     self.metrics["sampling_top1_prob"][:] = pmax
     self.metrics["sampling_top1_bin"][:] = imax.float() / self.bin_count
 
   def _uniform_sampling(self, env_ids: torch.Tensor):
-    if self._uses_pkl_motion:
+    if self._uses_motion_library:
       assert self.motion_lib is not None
       sampled_motion_ids = self.motion_lib.sample_motions(len(env_ids))
       self.motion_ids[env_ids] = sampled_motion_ids
       self.motion_time_offsets[env_ids] = self.motion_lib.sample_time(sampled_motion_ids)
       self.time_steps[env_ids] = 0
       self._refresh_motion_frame()
+
+      motion_probabilities = self.motion_lib.motion_weights
+      motion_top_prob, motion_top_idx = motion_probabilities.max(dim=0)
+      if self.motion_lib.num_motions() > 1:
+        motion_entropy = -(
+          motion_probabilities * (motion_probabilities + 1.0e-12).log()
+        ).sum() / math.log(self.motion_lib.num_motions())
+      else:
+        motion_entropy = torch.tensor(1.0, device=self.device)
+      self.metrics["sampling_motion_entropy"][:] = motion_entropy
+      self.metrics["sampling_motion_top1_prob"][:] = motion_top_prob
+      self.metrics["sampling_motion_top1_idx"][:] = (
+        motion_top_idx.float() / self.motion_lib.num_motions()
+      )
+      self.metrics["sampling_phase_entropy"][:] = 1.0
+      self.metrics["sampling_phase_top1_prob"][:] = 1.0 / self.bin_count
+      self.metrics["sampling_phase_top1_bin"][:] = 0.5
     else:
       assert self.motion is not None
       self.time_steps[env_ids] = torch.randint(
         0, self.motion.time_step_total, (len(env_ids),), device=self.device
       )
+      self.metrics["sampling_motion_entropy"][:] = 0.0
+      self.metrics["sampling_motion_top1_prob"][:] = 0.0
+      self.metrics["sampling_motion_top1_idx"][:] = 0.0
+      self.metrics["sampling_phase_entropy"][:] = 1.0
+      self.metrics["sampling_phase_top1_prob"][:] = 1.0 / self.bin_count
+      self.metrics["sampling_phase_top1_bin"][:] = 0.5
 
     self.metrics["sampling_entropy"][:] = 1.0
     self.metrics["sampling_top1_prob"][:] = 1.0 / self.bin_count
@@ -1204,12 +1284,12 @@ class MotionCommand(CommandTerm):
 
   def _resample_command(self, env_ids: torch.Tensor):
     if self.cfg.sampling_mode == "start":
-      if self._uses_pkl_motion:
+      if self._uses_motion_library:
         assert self.motion_lib is not None
         self.motion_ids[env_ids] = self.motion_lib.sample_motions(len(env_ids))
         self.motion_time_offsets[env_ids] = 0.0
       self.time_steps[env_ids] = 0
-      if self._uses_pkl_motion:
+      if self._uses_motion_library:
         self._refresh_motion_frame()
     elif self.cfg.sampling_mode == "uniform":
       self._uniform_sampling(env_ids)
@@ -1279,7 +1359,7 @@ class MotionCommand(CommandTerm):
   def _update_command(self):
     self.time_steps += 1
 
-    if self._uses_pkl_motion:
+    if self._uses_motion_library:
       assert self.motion_lib is not None
       motion_times = self._current_times_s()
       motion_lengths = self.motion_lib.get_motion_length(self.motion_ids)
@@ -1317,12 +1397,30 @@ class MotionCommand(CommandTerm):
       delta_ori_w, self.body_pos_w - anchor_pos_w_repeat
     )
 
-    if (not self._uses_pkl_motion) and self.cfg.sampling_mode == "adaptive":
-      self.bin_failed_count = (
-        self.cfg.adaptive_alpha * self._current_bin_failed
-        + (1 - self.cfg.adaptive_alpha) * self.bin_failed_count
-      )
-      self._current_bin_failed.zero_()
+    if self.cfg.sampling_mode == "adaptive":
+      if self._uses_motion_library:
+        assert self.motion_failed_count is not None
+        assert self._current_motion_failed is not None
+        assert self.phase_failed_count is not None
+        assert self._current_phase_failed is not None
+        self.motion_failed_count = (
+          self.cfg.adaptive_alpha * self._current_motion_failed
+          + (1 - self.cfg.adaptive_alpha) * self.motion_failed_count
+        )
+        self.phase_failed_count = (
+          self.cfg.adaptive_alpha * self._current_phase_failed
+          + (1 - self.cfg.adaptive_alpha) * self.phase_failed_count
+        )
+        self._current_motion_failed.zero_()
+        self._current_phase_failed.zero_()
+      else:
+        assert self.bin_failed_count is not None
+        assert self._current_bin_failed is not None
+        self.bin_failed_count = (
+          self.cfg.adaptive_alpha * self._current_bin_failed
+          + (1 - self.cfg.adaptive_alpha) * self.bin_failed_count
+        )
+        self._current_bin_failed.zero_()
 
   def _debug_vis_impl(self, visualizer: DebugVisualizer) -> None:
     env_indices = visualizer.get_env_indices(self.num_envs)

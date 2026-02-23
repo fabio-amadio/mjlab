@@ -1,66 +1,44 @@
-root_path: ../../../../../../assets/motions/clamp/g1_motions
-default_quat_convention: xyzw
+root_path: ../../../../../../assets/motions/clamp/g1_motions_npz
 subfolders:
   - name: mocap
     weight: 100.0
-    quat_convention: xyzw
   - name: accad
     weight: 1.0
-    quat_convention: xyzw
   - name: bmlhandball
     weight: 1.0
-    quat_convention: xyzw
   - name: bmlmovi
     weight: 1.0
-    quat_convention: xyzw
   - name: cmu
     weight: 1.0
-    quat_convention: xyzw
   - name: cnrs
     weight: 1.0
-    quat_convention: xyzw
   # - name: dancedb
   #   weight: 1.0
-  #   quat_convention: xyzw
-  - name: dfaust
-    weight: 1.0
-    quat_convention: xyzw
-  - name: ekut
-    weight: 1.0
-    quat_convention: xyzw
-  - name: eyes_japan
-    weight: 1.0
-    quat_convention: xyzw
-  - name: grab
-    weight: 1.0
-    quat_convention: xyzw
-  - name: hdm05
-    weight: 1.0
-    quat_convention: xyzw
+  # - name: dfaust
+  #   weight: 1.0
+  # - name: ekut
+  #   weight: 1.0
+  # - name: eyes_japan
+  #   weight: 1.0
+  # - name: grab
+  #   weight: 1.0
+  # - name: hdm05
+  #   weight: 1.0
   # - name: human4d
   #   weight: 1.0
-  #   quat_convention: xyzw
   # - name: humaneva
   #   weight: 1.0
-  #   quat_convention: xyzw
   # - name: kit
   #   weight: 1.0
-  #   quat_convention: xyzw
   # - name: mpi_limits
   #   weight: 1.0
-  #   quat_convention: xyzw
   # - name: mpi_mosh
   #   weight: 1.0
-  #   quat_convention: xyzw
   # - name: omomo
   #   weight: 1.0
-  #   quat_convention: xyzw
   # - name: sfu
   #   weight: 1.0
-  #   quat_convention: xyzw
   # - name: totalcapture
   #   weight: 1.0
-  #   quat_convention: xyzw
   # - name: transitions
   #   weight: 1.0
-  #   quat_convention: xyzw

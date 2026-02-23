@@ -79,7 +79,7 @@ class ClampOnPolicyRunner(MjlabOnPolicyRunner):
 
     motion_term = self.env.unwrapped.command_manager.get_term("motion")
     if isinstance(motion_term, MotionCommand) and motion_term.motion is None:
-      # Stage-A currently uses PKL motion libraries; ONNX export is deferred.
+      # Multi-motion datasets use motion libraries; ONNX export is deferred.
       return
 
     policy_path = path.split("model")[0]
