@@ -16,7 +16,7 @@ from mjlab.managers.termination_manager import TerminationTermCfg
 from mjlab.scene import SceneCfg
 from mjlab.sim import MujocoCfg, SimulationCfg
 from mjlab.tasks.clamp import mdp
-from mjlab.tasks.clamp.mdp import MotionCommandCfg
+from mjlab.tasks.clamp.mdp import FutureJointRefAnchorMotionCommandCfg
 from mjlab.tasks.velocity import mdp as velocity_mdp
 from mjlab.terrains import TerrainImporterCfg
 from mjlab.utils.noise import UniformNoiseCfg as Unoise
@@ -162,7 +162,7 @@ def make_clamp_env_cfg() -> ManagerBasedRlEnvCfg:
   ##
 
   commands: dict[str, CommandTermCfg] = {
-    "motion": MotionCommandCfg(
+    "motion": FutureJointRefAnchorMotionCommandCfg(
       entity_name="robot",
       resampling_time_range=(1.0e9, 1.0e9),
       debug_vis=True,
@@ -180,7 +180,6 @@ def make_clamp_env_cfg() -> ManagerBasedRlEnvCfg:
       motion_file="",
       anchor_body_name="",
       body_names=(),
-      command_mode="future_joint_ref",
       command_step_offsets=DEFAULT_TEACHER_FUTURE_STEPS,
       sampling_mode="uniform",
     )

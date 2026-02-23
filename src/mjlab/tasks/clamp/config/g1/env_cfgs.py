@@ -8,12 +8,12 @@ from mjlab.asset_zoo.robots import (
   G1_ACTION_SCALE,
   get_g1_robot_cfg,
 )
+from mjlab.entity import EntityArticulationInfoCfg
 from mjlab.envs import ManagerBasedRlEnvCfg
 from mjlab.envs.mdp.actions import JointPositionActionCfg
-from mjlab.entity import EntityArticulationInfoCfg
 from mjlab.sensor import ContactMatch, ContactSensorCfg
 from mjlab.tasks.clamp.clamp_env_cfg import make_clamp_env_cfg
-from mjlab.tasks.clamp.mdp import MotionCommandCfg
+from mjlab.tasks.clamp.mdp import FutureJointRefAnchorMotionCommandCfg
 
 G1_ALL_BODY_NAMES = (
   "pelvis",
@@ -161,7 +161,7 @@ def unitree_g1_flat_clamp_teacher_env_cfg(
   joint_pos_action.scale = G1_ACTION_SCALE
 
   motion_cmd = cfg.commands["motion"]
-  assert isinstance(motion_cmd, MotionCommandCfg)
+  assert isinstance(motion_cmd, FutureJointRefAnchorMotionCommandCfg)
   motion_cmd.motion_file = DEFAULT_CLAMP_STAGE_A_MOTION_SOURCE
   motion_cmd.anchor_body_name = "pelvis"
   motion_cmd.body_names = G1_ALL_BODY_NAMES

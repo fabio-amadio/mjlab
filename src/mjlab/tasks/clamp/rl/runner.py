@@ -1,13 +1,12 @@
 import os
 
-import wandb
 import rsl_rl.runners.on_policy_runner as rsl_on_policy_runner
+import wandb
 from rsl_rl.env.vec_env import VecEnv
 
 from mjlab.rl import RslRlVecEnvWrapper
 from mjlab.rl.runner import MjlabOnPolicyRunner
-from mjlab.tasks.clamp.mdp import MotionCommand
-from mjlab.tasks.clamp.mdp import MotionCommandCfg
+from mjlab.tasks.clamp.mdp import MotionCommand, MotionCommandCfg
 from mjlab.tasks.clamp.rl.exporter import (
   attach_onnx_metadata,
   export_motion_policy_as_onnx,
@@ -45,10 +44,9 @@ class ClampOnPolicyRunner(MjlabOnPolicyRunner):
       return None
     motion_obs_dim = int(command.shape[-1])
     motion_steps = 1
-    if motion_cmd_cfg.command_mode in ("future_joint_ref", "future_joint_ref_anchor"):
-      if len(motion_cmd_cfg.command_step_offsets) == 0:
-        return None
-      motion_steps = len(motion_cmd_cfg.command_step_offsets)
+    step_offsets = getattr(motion_cmd_cfg, "command_step_offsets", ())
+    if len(step_offsets) > 0:
+      motion_steps = len(step_offsets)
     return motion_obs_dim, motion_steps
 
   @classmethod

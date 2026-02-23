@@ -4,10 +4,9 @@ from functools import reduce
 
 import torch
 import torch.nn as nn
-from torch.distributions import Normal
-
 from rsl_rl.networks import EmpiricalNormalization
 from rsl_rl.networks.mlp import resolve_nn_activation
+from torch.distributions import Normal
 
 
 class MotionEncoder(nn.Module):
@@ -151,7 +150,10 @@ class ClampActorCriticMimic(nn.Module):
     )
     print(f"Actor Motion Encoder: {self.actor_motion_encoder}")
     actor_backbone_in = (
-      num_actor_obs - self.motion_obs_dim + self.single_motion_obs_dim + motion_latent_dim
+      num_actor_obs
+      - self.motion_obs_dim
+      + self.single_motion_obs_dim
+      + motion_latent_dim
     )
     actor_out_dim: int | list[int]
     if self.state_dependent_std:
@@ -182,7 +184,10 @@ class ClampActorCriticMimic(nn.Module):
     )
     print(f"Critic Motion Encoder: {self.critic_motion_encoder}")
     critic_backbone_in = (
-      num_critic_obs - self.motion_obs_dim + self.single_motion_obs_dim + motion_latent_dim
+      num_critic_obs
+      - self.motion_obs_dim
+      + self.single_motion_obs_dim
+      + motion_latent_dim
     )
     self.critic = self._build_mlp(
       input_dim=critic_backbone_in,
@@ -260,7 +265,9 @@ class ClampActorCriticMimic(nn.Module):
             log_std_init = torch.log(torch.tensor(action_std, dtype=torch.float32))
           self.log_std = nn.Parameter(log_std_init, requires_grad=False)
         else:
-          self.log_std = nn.Parameter(torch.log(init_noise_std * torch.ones(num_actions)))
+          self.log_std = nn.Parameter(
+            torch.log(init_noise_std * torch.ones(num_actions))
+          )
       else:
         raise ValueError(
           f"Unknown standard deviation type: {self.noise_std_type}. "
@@ -332,7 +339,9 @@ class ClampActorCriticMimic(nn.Module):
     assert self.distribution is not None
     return self.distribution.entropy().sum(dim=-1)
 
-  def _split_motion_obs(self, obs_flat: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+  def _split_motion_obs(
+    self, obs_flat: torch.Tensor
+  ) -> tuple[torch.Tensor, torch.Tensor]:
     motion_obs = obs_flat[:, : self.motion_obs_dim]
     remainder = obs_flat[:, self.motion_obs_dim :]
     return motion_obs, remainder
