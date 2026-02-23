@@ -40,20 +40,16 @@ class ClampOnPolicyRunner(MjlabOnPolicyRunner):
     motion_cmd_cfg = env_unwrapped.cfg.commands.get("motion")
     if not isinstance(motion_cmd_cfg, MotionCommandCfg):
       return None
-    policy_obs_cfg = env_unwrapped.cfg.observations.get("policy")
-    if policy_obs_cfg is None:
+    command = env_unwrapped.command_manager.get_command("motion")
+    if command is None:
       return None
-    motion_term = policy_obs_cfg.terms.get("priv_motion_ref")
-    if motion_term is None:
-      return None
-    step_offsets = tuple(motion_term.params.get("step_offsets", ()))
-    key_body_names = tuple(motion_term.params.get("key_body_names", ()))
-    if len(step_offsets) == 0:
-      return None
-    # motion_teacher_reference_obs per-step dims:
-    # root_pos_xyz(3) + rpy(3) + root_lin_vel_b(3) + yaw_rate(1) + dof_pos + key_body_pos(3*N).
-    per_step_dim = 3 + 3 + 3 + 1 + int(env.num_actions) + 3 * len(key_body_names)
-    return per_step_dim * len(step_offsets), len(step_offsets)
+    motion_obs_dim = int(command.shape[-1])
+    motion_steps = 1
+    if motion_cmd_cfg.command_mode == "future_mimic":
+      if len(motion_cmd_cfg.command_step_offsets) == 0:
+        return None
+      motion_steps = len(motion_cmd_cfg.command_step_offsets)
+    return motion_obs_dim, motion_steps
 
   @classmethod
   def _configure_policy_cfg(cls, env: VecEnv, train_cfg: dict) -> None:

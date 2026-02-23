@@ -1,4 +1,4 @@
-"""CLAMP Stage-A teacher task configuration.
+"""CLAMP teacher task configuration.
 
 This module defines the task-level CLAMP configuration (teacher stage).
 Robot-specific values are applied in config/<robot>/env_cfgs.py.
@@ -65,7 +65,7 @@ DEFAULT_TEACHER_FUTURE_STEPS = (
 
 
 def make_clamp_env_cfg() -> ManagerBasedRlEnvCfg:
-  """Create CLAMP Stage-A teacher task configuration template."""
+  """Create CLAMP teacher task configuration template."""
 
   ##
   # Observations (TWIST teacher structure)
@@ -73,11 +73,9 @@ def make_clamp_env_cfg() -> ManagerBasedRlEnvCfg:
 
   priv_mimic_terms = {
     "priv_motion_ref": ObservationTermCfg(
-      func=mdp.motion_teacher_reference_obs,
+      func=mdp.generated_commands,
       params={
         "command_name": "motion",
-        "step_offsets": DEFAULT_TEACHER_FUTURE_STEPS,
-        "key_body_names": (),  # Set in robot cfg.
       },
     ),
   }
@@ -184,6 +182,9 @@ def make_clamp_env_cfg() -> ManagerBasedRlEnvCfg:
       motion_file="",
       anchor_body_name="",
       body_names=(),
+      command_mode="future_mimic",
+      command_step_offsets=DEFAULT_TEACHER_FUTURE_STEPS,
+      command_key_body_names=(),  # Set in robot cfg.
       sampling_mode="uniform",
     )
   }
