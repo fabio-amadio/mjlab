@@ -119,7 +119,11 @@ def unitree_g1_flat_clamp_teacher_env_cfg(
 
     cfg.observations["policy"].enable_corruption = False
     cfg.observations["critic"].enable_corruption = False
+    motion_clip_end_term = cfg.terminations.get("motion_clip_end")
     cfg.terminations.clear()
+    if motion_clip_end_term is not None:
+      # Keep only clip-end reset for smooth reference playback loops.
+      cfg.terminations["motion_clip_end"] = motion_clip_end_term
     cfg.events.pop("push_robot", None)
     cfg.events.pop("push_end_effector", None)
     cfg.events.pop("action_delay", None)
