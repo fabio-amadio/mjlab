@@ -41,6 +41,17 @@ class MotionCommand(CommandTerm):
     self.robot: Entity = env.scene[cfg.entity_name]
     self._uses_motion_library = False
 
+    if cfg.anchor_body_name == "":
+      raise ValueError("`anchor_body_name` must be set for MotionCommand.")
+    if len(cfg.body_names) == 0:
+      raise ValueError("`body_names` must be non-empty for MotionCommand.")
+    self.root_body_name = cfg.root_body_name or cfg.body_names[0]
+    if self.root_body_name == "":
+      raise ValueError("`root_body_name` cannot be empty when provided.")
+    required_motion_body_names = tuple(
+      dict.fromkeys((cfg.anchor_body_name, *cfg.body_names, self.root_body_name))
+    )
+
     self.motion: MotionLoader | None = None
     self.motion_lib: NpzMotionLibrary | None = None
     self._current_motion_frame: MotionFrameBatch | None = None
@@ -49,12 +60,17 @@ class MotionCommand(CommandTerm):
     if source.suffix == ".npz":
       if not source.is_file():
         raise ValueError(f"Motion npz file does not exist: {self.cfg.motion_file}")
-      self.motion = MotionLoader(self.cfg.motion_file, device=self.device)
+      self.motion = MotionLoader(
+        self.cfg.motion_file,
+        device=self.device,
+        required_body_names=required_motion_body_names,
+      )
     else:
       self.motion_lib = NpzMotionLibrary(
         self.cfg.motion_file,
         device=self.device,
         show_progress=self.cfg.show_motion_load_progress,
+        required_body_names=required_motion_body_names,
       )
       self._uses_motion_library = True
 
@@ -78,6 +94,7 @@ class MotionCommand(CommandTerm):
 
     self.robot_anchor_body_index = robot_name_to_index[self.cfg.anchor_body_name]
     self.motion_anchor_body_index = motion_name_to_index[self.cfg.anchor_body_name]
+    self.motion_root_body_index = motion_name_to_index[self.root_body_name]
     self.robot_body_indexes = torch.tensor(
       [robot_name_to_index[name] for name in self.cfg.body_names],
       dtype=torch.long,
@@ -426,6 +443,44 @@ class MotionCommand(CommandTerm):
     return self.motion.body_ang_vel_w[self.time_steps, self.motion_anchor_body_index]
 
   @property
+  def root_pos_w(self) -> torch.Tensor:
+    if self._uses_motion_library:
+      assert self._current_motion_frame is not None
+      return (
+        self._current_motion_frame.body_pos_w[:, self.motion_root_body_index]
+        + self._env.scene.env_origins
+      )
+    assert self.motion is not None
+    return (
+      self.motion.body_pos_w[self.time_steps, self.motion_root_body_index]
+      + self._env.scene.env_origins
+    )
+
+  @property
+  def root_quat_w(self) -> torch.Tensor:
+    if self._uses_motion_library:
+      assert self._current_motion_frame is not None
+      return self._current_motion_frame.body_quat_w[:, self.motion_root_body_index]
+    assert self.motion is not None
+    return self.motion.body_quat_w[self.time_steps, self.motion_root_body_index]
+
+  @property
+  def root_lin_vel_w(self) -> torch.Tensor:
+    if self._uses_motion_library:
+      assert self._current_motion_frame is not None
+      return self._current_motion_frame.body_lin_vel_w[:, self.motion_root_body_index]
+    assert self.motion is not None
+    return self.motion.body_lin_vel_w[self.time_steps, self.motion_root_body_index]
+
+  @property
+  def root_ang_vel_w(self) -> torch.Tensor:
+    if self._uses_motion_library:
+      assert self._current_motion_frame is not None
+      return self._current_motion_frame.body_ang_vel_w[:, self.motion_root_body_index]
+    assert self.motion is not None
+    return self.motion.body_ang_vel_w[self.time_steps, self.motion_root_body_index]
+
+  @property
   def robot_joint_pos(self) -> torch.Tensor:
     return self.robot.data.joint_pos
 
@@ -527,6 +582,7 @@ class MotionCommandCfg(CommandTermCfg):
   motion_file: str
   anchor_body_name: str
   body_names: tuple[str, ...]
+  root_body_name: str = ""
   motion_body_names: tuple[str, ...] | None = None
   entity_name: str
   pose_range: dict[str, tuple[float, float]] = field(default_factory=dict)

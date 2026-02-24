@@ -233,10 +233,10 @@ def resample_command(command: MotionCommand, env_ids: torch.Tensor) -> None:
     assert command.cfg.sampling_mode == "adaptive"
     adaptive_sampling(command, env_ids)
 
-  root_pos = command.body_pos_w[:, 0].clone()
-  root_ori = command.body_quat_w[:, 0].clone()
-  root_lin_vel = command.body_lin_vel_w[:, 0].clone()
-  root_ang_vel = command.body_ang_vel_w[:, 0].clone()
+  root_pos = command.root_pos_w.clone()
+  root_ori = command.root_quat_w.clone()
+  root_lin_vel = command.root_lin_vel_w.clone()
+  root_ang_vel = command.root_ang_vel_w.clone()
 
   range_list = [
     command.cfg.pose_range.get(key, (0.0, 0.0))

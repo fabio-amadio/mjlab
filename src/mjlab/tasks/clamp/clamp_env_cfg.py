@@ -170,6 +170,7 @@ def make_clamp_env_cfg() -> ManagerBasedRlEnvCfg:
       motion_file="",
       anchor_body_name="",
       body_names=(),
+      root_body_name="",
       command_step_offsets=DEFAULT_TEACHER_FUTURE_STEPS,
       sampling_mode="uniform",
     )

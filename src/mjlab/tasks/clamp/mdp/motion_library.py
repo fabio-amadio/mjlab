@@ -16,27 +16,58 @@ except ModuleNotFoundError:
 
 
 class MotionLoader:
-  def __init__(self, motion_file: str, device: str = "cpu") -> None:
+  def __init__(
+    self,
+    motion_file: str,
+    device: str = "cpu",
+    required_body_names: tuple[str, ...] | None = None,
+  ) -> None:
     with np.load(motion_file) as data:
+      file_body_names = self._extract_body_names(data)
+      selected_indices: np.ndarray | None = None
+      if required_body_names is not None:
+        if file_body_names is None:
+          raise ValueError(
+            "Motion npz must include body names (`body_names` or `body_link_names`) "
+            f"when selective loading is enabled: {motion_file}"
+          )
+        selected_indices = _resolve_required_body_indices(
+          file_body_names=file_body_names,
+          required_body_names=required_body_names,
+          source=motion_file,
+        )
+
       self.joint_pos = torch.tensor(
         data["joint_pos"], dtype=torch.float32, device=device
       )
       self.joint_vel = torch.tensor(
         data["joint_vel"], dtype=torch.float32, device=device
       )
+      body_pos_w = np.asarray(data["body_pos_w"])
+      body_quat_w = np.asarray(data["body_quat_w"])
+      body_lin_vel_w = np.asarray(data["body_lin_vel_w"])
+      body_ang_vel_w = np.asarray(data["body_ang_vel_w"])
+      if selected_indices is not None:
+        body_pos_w = body_pos_w[:, selected_indices, :]
+        body_quat_w = body_quat_w[:, selected_indices, :]
+        body_lin_vel_w = body_lin_vel_w[:, selected_indices, :]
+        body_ang_vel_w = body_ang_vel_w[:, selected_indices, :]
       self.body_pos_w = torch.tensor(
-        data["body_pos_w"], dtype=torch.float32, device=device
+        body_pos_w, dtype=torch.float32, device=device
       )
       self.body_quat_w = torch.tensor(
-        data["body_quat_w"], dtype=torch.float32, device=device
+        body_quat_w, dtype=torch.float32, device=device
       )
       self.body_lin_vel_w = torch.tensor(
-        data["body_lin_vel_w"], dtype=torch.float32, device=device
+        body_lin_vel_w, dtype=torch.float32, device=device
       )
       self.body_ang_vel_w = torch.tensor(
-        data["body_ang_vel_w"], dtype=torch.float32, device=device
+        body_ang_vel_w, dtype=torch.float32, device=device
       )
-      self.body_names = self._extract_body_names(data)
+      if required_body_names is None:
+        self.body_names = file_body_names
+      else:
+        self.body_names = tuple(required_body_names)
 
     self.time_step_total = self.joint_pos.shape[0]
 
@@ -97,6 +128,44 @@ def _load_yaml_config(yaml_path: Path) -> dict[str, object]:
   return data
 
 
+def _build_name_to_index(body_names: tuple[str, ...], source: str) -> dict[str, int]:
+  name_to_index: dict[str, int] = {}
+  duplicates: list[str] = []
+  for index, name in enumerate(body_names):
+    if name in name_to_index:
+      duplicates.append(name)
+    else:
+      name_to_index[name] = index
+  if duplicates:
+    raise ValueError(
+      f"Duplicate body names found in motion source `{source}`: {sorted(set(duplicates))}"
+    )
+  return name_to_index
+
+
+def _resolve_required_body_indices(
+  file_body_names: tuple[str, ...],
+  required_body_names: tuple[str, ...],
+  source: str | Path,
+) -> np.ndarray:
+  if len(required_body_names) == 0:
+    raise ValueError("`required_body_names` must be non-empty when provided.")
+  unique_required = tuple(dict.fromkeys(required_body_names))
+  if len(unique_required) != len(required_body_names):
+    raise ValueError(
+      f"`required_body_names` contains duplicates for `{source}`: {required_body_names}"
+    )
+
+  name_to_index = _build_name_to_index(file_body_names, str(source))
+  missing = [name for name in required_body_names if name not in name_to_index]
+  if missing:
+    raise ValueError(
+      f"Missing required motion bodies in `{source}`: {missing}. "
+      f"Available bodies: {file_body_names}"
+    )
+  return np.asarray([name_to_index[name] for name in required_body_names], dtype=np.int64)
+
+
 def _quat_slerp_batch(
   q0: torch.Tensor, q1: torch.Tensor, blend: torch.Tensor
 ) -> torch.Tensor:
@@ -132,8 +201,10 @@ class NpzMotionLibrary:
     motion_source: str,
     device: str = "cpu",
     show_progress: bool | None = None,
+    required_body_names: tuple[str, ...] | None = None,
   ) -> None:
     self.device = device
+    self.required_body_names = required_body_names
     motion_files, per_motion_weights = self._resolve_motion_entries(motion_source)
     if len(motion_files) == 0:
       raise ValueError(f"No .npz motion files found in: {motion_source}")
@@ -174,6 +245,23 @@ class NpzMotionLibrary:
 
         fps = self._extract_fps(data)
         dt = 1.0 / max(fps, 1e-6)
+        file_body_names = MotionLoader._extract_body_names(data)
+        if file_body_names is None:
+          raise ValueError(
+            "Motion npz must include body names (`body_names` or `body_link_names`): "
+            f"{motion_file}"
+          )
+        selected_indices: np.ndarray | None = None
+        selected_body_names: tuple[str, ...]
+        if self.required_body_names is not None:
+          selected_indices = _resolve_required_body_indices(
+            file_body_names=file_body_names,
+            required_body_names=self.required_body_names,
+            source=motion_file,
+          )
+          selected_body_names = tuple(self.required_body_names)
+        else:
+          selected_body_names = tuple(file_body_names)
 
         joint_pos = torch.tensor(
           np.asarray(data["joint_pos"]), dtype=torch.float32, device=self.device
@@ -181,20 +269,27 @@ class NpzMotionLibrary:
         joint_vel = torch.tensor(
           np.asarray(data["joint_vel"]), dtype=torch.float32, device=self.device
         )
+        body_pos_w_np = np.asarray(data["body_pos_w"])
+        body_quat_w_np = np.asarray(data["body_quat_w"])
+        body_lin_vel_w_np = np.asarray(data["body_lin_vel_w"])
+        body_ang_vel_w_np = np.asarray(data["body_ang_vel_w"])
+        if selected_indices is not None:
+          body_pos_w_np = body_pos_w_np[:, selected_indices, :]
+          body_quat_w_np = body_quat_w_np[:, selected_indices, :]
+          body_lin_vel_w_np = body_lin_vel_w_np[:, selected_indices, :]
+          body_ang_vel_w_np = body_ang_vel_w_np[:, selected_indices, :]
         body_pos_w = torch.tensor(
-          np.asarray(data["body_pos_w"]), dtype=torch.float32, device=self.device
+          body_pos_w_np, dtype=torch.float32, device=self.device
         )
         body_quat_w = torch.tensor(
-          np.asarray(data["body_quat_w"]), dtype=torch.float32, device=self.device
+          body_quat_w_np, dtype=torch.float32, device=self.device
         )
         body_lin_vel_w = torch.tensor(
-          np.asarray(data["body_lin_vel_w"]), dtype=torch.float32, device=self.device
+          body_lin_vel_w_np, dtype=torch.float32, device=self.device
         )
         body_ang_vel_w = torch.tensor(
-          np.asarray(data["body_ang_vel_w"]), dtype=torch.float32, device=self.device
+          body_ang_vel_w_np, dtype=torch.float32, device=self.device
         )
-
-        file_body_names = MotionLoader._extract_body_names(data)
 
       if joint_pos.ndim != 2:
         raise ValueError(f"Invalid joint_pos shape in {motion_file}: {joint_pos.shape}")
@@ -235,16 +330,11 @@ class NpzMotionLibrary:
           f"Motion {motion_file} has fewer than 2 frames: {joint_pos.shape[0]}"
         )
 
-      if file_body_names is None:
-        raise ValueError(
-          "Motion npz must include body names (`body_names` or `body_link_names`): "
-          f"{motion_file}"
-        )
       if self.body_names is None:
-        self.body_names = tuple(file_body_names)
-      elif self.body_names != tuple(file_body_names):
+        self.body_names = selected_body_names
+      elif self.body_names != selected_body_names:
         raise ValueError(
-          "All NPZ files must share the same body name ordering. "
+          "All NPZ files must share the same selected body name ordering. "
           f"Mismatch in {motion_file}."
         )
 
@@ -319,7 +409,7 @@ class NpzMotionLibrary:
     per_motion_weights: list[float],
     show_progress: bool | None,
   ):
-    entries = list(zip(motion_files, per_motion_weights))
+    entries = list(zip(motion_files, per_motion_weights, strict=True))
     if _should_show_progress(show_progress) and tqdm is not None and len(entries) > 1:
       return tqdm(
         entries,
