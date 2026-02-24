@@ -96,7 +96,6 @@ def make_clamp_env_cfg() -> ManagerBasedRlEnvCfg:
     "joint_pos": ObservationTermCfg(
       func=mdp.joint_pos_rel,
       noise=Unoise(n_min=-0.01, n_max=0.01),
-      params={"biased": True},
     ),
     "joint_vel": ObservationTermCfg(
       func=mdp.joint_vel_rel,
@@ -241,14 +240,6 @@ def make_clamp_env_cfg() -> ManagerBasedRlEnvCfg:
         "kd_range": (0.8, 1.2),
         "distribution": "uniform",
         "operation": "scale",
-      },
-    ),
-    "encoder_bias": EventTermCfg(
-      mode="startup",
-      func=mdp.randomize_encoder_bias,
-      params={
-        "asset_cfg": SceneEntityCfg("robot"),
-        "bias_range": (-0.01, 0.01),
       },
     ),
     "foot_friction": EventTermCfg(
