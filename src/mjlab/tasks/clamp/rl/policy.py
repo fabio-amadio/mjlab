@@ -17,7 +17,7 @@ class MotionEncoder(nn.Module):
     input_dim_per_step: int,
     num_steps: int,
     latent_dim: int,
-    activation: str = "swish",
+    activation: str = "elu",
     channel_size: int = 20,
   ) -> None:
     super().__init__()
@@ -90,7 +90,7 @@ class ClampActorCriticMimic(nn.Module):
     critic_obs_normalization: bool = False,
     actor_hidden_dims: tuple[int, ...] | list[int] = (256, 256, 256),
     critic_hidden_dims: tuple[int, ...] | list[int] = (256, 256, 256),
-    activation: str = "swish",
+    activation: str = "elu",
     init_noise_std: float = 1.0,
     noise_std_type: str = "scalar",
     state_dependent_std: bool = False,

@@ -18,7 +18,6 @@ from mjlab.sim import MujocoCfg, SimulationCfg
 from mjlab.tasks.clamp import mdp
 from mjlab.tasks.clamp.mdp import FutureJointRefAnchorMotionCommandCfg
 from mjlab.tasks.tracking import mdp as tracking_mdp
-from mjlab.tasks.velocity import mdp as velocity_mdp
 from mjlab.terrains import TerrainImporterCfg
 from mjlab.utils.noise import UniformNoiseCfg as Unoise
 from mjlab.viewer import ViewerConfig
@@ -312,9 +311,9 @@ def make_clamp_env_cfg() -> ManagerBasedRlEnvCfg:
 
   terminations: dict[str, TerminationTermCfg] = {
     "time_out": TerminationTermCfg(func=mdp.time_out, time_out=True),
-    "torso_ground_contact": TerminationTermCfg(
-      func=velocity_mdp.illegal_contact,
-      params={"sensor_name": "torso_ground_contact"},
+    "motion_clip_end": TerminationTermCfg(
+      func=mdp.motion_reference_exhausted,
+      params={"command_name": "motion", "include_future_horizon": True},
     ),
     "anchor_pos": TerminationTermCfg(
       func=tracking_mdp.bad_anchor_pos_z_only,

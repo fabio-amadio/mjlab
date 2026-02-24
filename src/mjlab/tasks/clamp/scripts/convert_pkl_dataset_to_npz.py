@@ -35,7 +35,6 @@ from tqdm import tqdm
 
 from mjlab.asset_zoo.robots.unitree_g1.g1_constants import G1_XML
 
-
 QuatConvention = Literal["xyzw", "wxyz"]
 
 

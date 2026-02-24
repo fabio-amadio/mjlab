@@ -57,14 +57,6 @@ def unitree_g1_flat_clamp_teacher_env_cfg(
     num_slots=1,
     track_air_time=True,
   )
-  torso_ground_cfg = ContactSensorCfg(
-    name="torso_ground_contact",
-    primary=ContactMatch(mode="body", pattern="torso_link", entity="robot"),
-    secondary=ContactMatch(mode="body", pattern="terrain"),
-    fields=("found", "force"),
-    reduce="netforce",
-    num_slots=1,
-  )
   self_collision_cfg = ContactSensorCfg(
     name="self_collision",
     primary=ContactMatch(mode="subtree", pattern="pelvis", entity="robot"),
@@ -73,7 +65,7 @@ def unitree_g1_flat_clamp_teacher_env_cfg(
     reduce="none",
     num_slots=1,
   )
-  cfg.scene.sensors = (feet_ground_cfg, torso_ground_cfg, self_collision_cfg)
+  cfg.scene.sensors = (feet_ground_cfg, self_collision_cfg)
 
   joint_pos_action = cfg.actions["joint_pos"]
   assert isinstance(joint_pos_action, JointPositionActionCfg)
@@ -127,6 +119,7 @@ def unitree_g1_flat_clamp_teacher_env_cfg(
 
     cfg.observations["policy"].enable_corruption = False
     cfg.observations["critic"].enable_corruption = False
+    cfg.terminations.clear()
     cfg.events.pop("push_robot", None)
     cfg.events.pop("push_end_effector", None)
     cfg.events.pop("action_delay", None)

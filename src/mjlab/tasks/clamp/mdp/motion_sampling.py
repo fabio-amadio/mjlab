@@ -18,6 +18,29 @@ if TYPE_CHECKING:
   from .motion_command import MotionCommand
 
 
+def _max_future_offset_steps(command: MotionCommand) -> int:
+  offsets = getattr(command.cfg, "command_step_offsets", ())
+  if not isinstance(offsets, tuple) or len(offsets) == 0:
+    return 0
+  return max(int(offset) for offset in offsets)
+
+
+def _future_horizon_s(command: MotionCommand) -> float:
+  return float(_max_future_offset_steps(command)) * float(command._env.step_dt)
+
+
+def _sample_motion_ids_with_horizon(command: MotionCommand, n: int) -> torch.Tensor:
+  """Sample motion ids while preferring clips that can satisfy future horizon."""
+  assert command.motion_lib is not None
+  horizon_s = _future_horizon_s(command)
+  valid_mask = command.motion_lib.motion_lengths_s > (horizon_s + 1.0e-6)
+  if torch.any(valid_mask):
+    prob = command.motion_lib.motion_weights * valid_mask.to(command.motion_lib.motion_weights.dtype)
+    prob = prob / torch.clamp(prob.sum(), min=1.0e-8)
+    return torch.multinomial(prob, num_samples=n, replacement=True)
+  return command.motion_lib.sample_motions(n)
+
+
 def adaptive_sampling(command: MotionCommand, env_ids: torch.Tensor) -> None:
   if command._uses_motion_library:
     assert command.motion_lib is not None
@@ -29,7 +52,7 @@ def adaptive_sampling(command: MotionCommand, env_ids: torch.Tensor) -> None:
     command._current_motion_failed.zero_()
     command._current_phase_failed.zero_()
 
-    episode_failed = command._env.termination_manager.terminated[env_ids]
+    episode_failed = command._env.termination_manager.dones[env_ids]
     if torch.any(episode_failed):
       failed_env_ids = env_ids[episode_failed]
       failed_motion_ids = command.motion_ids[failed_env_ids]
@@ -55,6 +78,12 @@ def adaptive_sampling(command: MotionCommand, env_ids: torch.Tensor) -> None:
     motion_probabilities = (
       (1.0 - mix_ratio) * hard_motion_prob + mix_ratio * command.motion_lib.motion_weights
     )
+    horizon_s = _future_horizon_s(command)
+    valid_mask = (command.motion_lib.motion_lengths_s > (horizon_s + 1.0e-6)).to(
+      motion_probabilities.dtype
+    )
+    if torch.any(valid_mask > 0):
+      motion_probabilities = motion_probabilities * valid_mask
     motion_probabilities = motion_probabilities / motion_probabilities.sum()
 
     hard_phase_prob = command.phase_failed_count + 1.0 / float(command.bin_count)
@@ -88,6 +117,8 @@ def adaptive_sampling(command: MotionCommand, env_ids: torch.Tensor) -> None:
     ) / command.bin_count
     sampled_lengths = command.motion_lib.get_motion_length(sampled_motion_ids)
     sampled_offsets = sampled_phase * sampled_lengths
+    sampled_max_start = torch.clamp(sampled_lengths - horizon_s - 1.0e-6, min=0.0)
+    sampled_offsets = torch.minimum(sampled_offsets, sampled_max_start)
     sampled_offsets = torch.minimum(
       sampled_offsets,
       torch.clamp(sampled_lengths - 1.0e-6, min=0.0),
@@ -129,7 +160,7 @@ def adaptive_sampling(command: MotionCommand, env_ids: torch.Tensor) -> None:
   assert command.motion is not None
   assert command.bin_failed_count is not None
   assert command._current_bin_failed is not None
-  episode_failed = command._env.termination_manager.terminated[env_ids]
+  episode_failed = command._env.termination_manager.dones[env_ids]
   command._current_bin_failed.zero_()
   if torch.any(episode_failed):
     current_bin_index = torch.clamp(
@@ -161,6 +192,8 @@ def adaptive_sampling(command: MotionCommand, env_ids: torch.Tensor) -> None:
     / command.bin_count
     * (command.motion.time_step_total - 1)
   ).long()
+  max_start_idx = max(command.motion.time_step_total - 1 - _max_future_offset_steps(command), 0)
+  command.time_steps[env_ids] = torch.clamp(command.time_steps[env_ids], max=max_start_idx)
 
   H = -(sampling_probabilities * (sampling_probabilities + 1e-12).log()).sum()
   H_norm = H / math.log(command.bin_count)
@@ -179,9 +212,14 @@ def adaptive_sampling(command: MotionCommand, env_ids: torch.Tensor) -> None:
 def uniform_sampling(command: MotionCommand, env_ids: torch.Tensor) -> None:
   if command._uses_motion_library:
     assert command.motion_lib is not None
-    sampled_motion_ids = command.motion_lib.sample_motions(len(env_ids))
+    sampled_motion_ids = _sample_motion_ids_with_horizon(command, len(env_ids))
     command.motion_ids[env_ids] = sampled_motion_ids
-    command.motion_time_offsets[env_ids] = command.motion_lib.sample_time(sampled_motion_ids)
+    sampled_lengths = command.motion_lib.get_motion_length(sampled_motion_ids)
+    horizon_s = _future_horizon_s(command)
+    sampled_max_start = torch.clamp(sampled_lengths - horizon_s - 1.0e-6, min=0.0)
+    command.motion_time_offsets[env_ids] = (
+      torch.rand(sampled_max_start.shape, device=command.device) * sampled_max_start
+    )
     command.time_steps[env_ids] = 0
     command._refresh_motion_frame()
 
@@ -203,8 +241,9 @@ def uniform_sampling(command: MotionCommand, env_ids: torch.Tensor) -> None:
     command.metrics["sampling_phase_top1_bin"][:] = 0.5
   else:
     assert command.motion is not None
+    max_start_idx = max(command.motion.time_step_total - 1 - _max_future_offset_steps(command), 0)
     command.time_steps[env_ids] = torch.randint(
-      0, command.motion.time_step_total, (len(env_ids),), device=command.device
+      0, max_start_idx + 1, (len(env_ids),), device=command.device
     )
     command.metrics["sampling_motion_entropy"][:] = 0.0
     command.metrics["sampling_motion_top1_prob"][:] = 0.0
@@ -222,7 +261,7 @@ def resample_command(command: MotionCommand, env_ids: torch.Tensor) -> None:
   if command.cfg.sampling_mode == "start":
     if command._uses_motion_library:
       assert command.motion_lib is not None
-      command.motion_ids[env_ids] = command.motion_lib.sample_motions(len(env_ids))
+      command.motion_ids[env_ids] = _sample_motion_ids_with_horizon(command, len(env_ids))
       command.motion_time_offsets[env_ids] = 0.0
     command.time_steps[env_ids] = 0
     if command._uses_motion_library:
@@ -292,21 +331,11 @@ def resample_command(command: MotionCommand, env_ids: torch.Tensor) -> None:
 
 
 def update_command(command: MotionCommand) -> None:
-  command.time_steps += 1
-
   if command._uses_motion_library:
-    assert command.motion_lib is not None
-    motion_times = command._current_times_s()
-    motion_lengths = command.motion_lib.get_motion_length(command.motion_ids)
-    env_ids = torch.where(motion_times >= motion_lengths)[0]
-    if env_ids.numel() > 0:
-      resample_command(command, env_ids)
     command._refresh_motion_frame()
   else:
     assert command.motion is not None
-    env_ids = torch.where(command.time_steps >= command.motion.time_step_total)[0]
-    if env_ids.numel() > 0:
-      resample_command(command, env_ids)
+    command.time_steps.clamp_(max=command.motion.time_step_total - 1)
 
   anchor_pos_w_repeat = command.anchor_pos_w[:, None, :].repeat(1, len(command.cfg.body_names), 1)
   anchor_quat_w_repeat = command.anchor_quat_w[:, None, :].repeat(1, len(command.cfg.body_names), 1)
@@ -350,3 +379,5 @@ def update_command(command: MotionCommand) -> None:
         + (1 - command.cfg.adaptive_alpha) * command.bin_failed_count
       )
       command._current_bin_failed.zero_()
+
+  command.time_steps += 1

@@ -1,5 +1,5 @@
-from mjlab.tasks.registry import register_mjlab_task
 from mjlab.tasks.clamp.rl import ClampOnPolicyRunner
+from mjlab.tasks.registry import register_mjlab_task
 
 from .env_cfgs import unitree_g1_flat_clamp_teacher_env_cfg
 from .rl_cfg import unitree_g1_clamp_teacher_ppo_runner_cfg
