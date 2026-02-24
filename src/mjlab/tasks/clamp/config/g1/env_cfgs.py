@@ -111,16 +111,11 @@ def unitree_g1_flat_clamp_teacher_env_cfg(
     "right_wrist_yaw_link",
   )
 
-  cfg.terminations["pose_termination"].params["body_names"] = (
-    "left_wrist_yaw_link",
-    "right_wrist_yaw_link",
-    "torso_link",
+  cfg.terminations["ee_body_pos"].params["body_names"] = (
     "left_ankle_roll_link",
     "right_ankle_roll_link",
-    "left_knee_link",
-    "right_knee_link",
-    "left_elbow_link",
-    "right_elbow_link",
+    "left_wrist_yaw_link",
+    "right_wrist_yaw_link",
   )
 
   cfg.viewer.body_name = "pelvis"
@@ -134,7 +129,6 @@ def unitree_g1_flat_clamp_teacher_env_cfg(
     cfg.events.pop("push_robot", None)
     cfg.events.pop("push_end_effector", None)
     cfg.events.pop("action_delay", None)
-    cfg.terminations.pop("motion_end", None)
 
     motion_cmd.pose_range = {}
     motion_cmd.velocity_range = {}

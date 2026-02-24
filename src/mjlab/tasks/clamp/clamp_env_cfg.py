@@ -18,7 +18,6 @@ from mjlab.sim import MujocoCfg, SimulationCfg
 from mjlab.tasks.clamp import mdp
 from mjlab.tasks.clamp.mdp import FutureJointRefAnchorMotionCommandCfg
 from mjlab.tasks.tracking import mdp as tracking_mdp
-from mjlab.tasks.velocity import mdp as velocity_mdp
 from mjlab.terrains import TerrainImporterCfg
 from mjlab.utils.noise import UniformNoiseCfg as Unoise
 from mjlab.viewer import ViewerConfig
@@ -311,37 +310,24 @@ def make_clamp_env_cfg() -> ManagerBasedRlEnvCfg:
 
   terminations: dict[str, TerminationTermCfg] = {
     "time_out": TerminationTermCfg(func=mdp.time_out, time_out=True),
-    "illegal_contact": TerminationTermCfg(
-      func=velocity_mdp.illegal_contact,
-      params={"sensor_name": "torso_ground_contact"},
+    "anchor_pos": TerminationTermCfg(
+      func=tracking_mdp.bad_anchor_pos_z_only,
+      params={"command_name": "motion", "threshold": 0.25},
     ),
-    "root_height_diff": TerminationTermCfg(
-      func=mdp.bad_root_height_diff,
-      params={"command_name": "motion", "threshold": 0.2},
-    ),
-    "roll_pitch": TerminationTermCfg(
-      func=mdp.bad_roll_pitch,
+    "anchor_ori": TerminationTermCfg(
+      func=tracking_mdp.bad_anchor_ori,
       params={
-        "roll_threshold": 1.0,
-        "pitch_threshold": 1.0,
         "asset_cfg": SceneEntityCfg("robot"),
+        "command_name": "motion",
+        "threshold": 0.8,
       },
     ),
-    "motion_end": TerminationTermCfg(
-      func=mdp.motion_end,
-      params={"command_name": "motion"},
-    ),
-    "root_lin_vel": TerminationTermCfg(
-      func=mdp.root_lin_vel_too_large,
-      params={"threshold": 5.0, "asset_cfg": SceneEntityCfg("robot")},
-    ),
-    "pose_termination": TerminationTermCfg(
-      func=mdp.pose_termination,
+    "ee_body_pos": TerminationTermCfg(
+      func=tracking_mdp.bad_motion_body_pos_z_only,
       params={
         "command_name": "motion",
-        "threshold": 0.7,
-        "body_names": (),  # Set in robot cfg.
-        "in_world_frame": False,
+        "threshold": 0.25,
+        "body_names": (),  # Set per-robot.
       },
     ),
   }
