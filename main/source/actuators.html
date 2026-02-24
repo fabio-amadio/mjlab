@@ -59,7 +59,7 @@
     <link rel="prev" title="Observation History and Delay" href="observation.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-    <meta name="docbuild:last-update" content="Feb 19, 2026"/>
+    <meta name="docbuild:last-update" content="Feb 24, 2026"/>
   </head>
   
   
@@ -185,6 +185,7 @@
 <ul class="nav bd-sidenav">
 <li class="toctree-l1"><a class="reference internal" href="motivation.html">Why mjlab?</a></li>
 <li class="toctree-l1"><a class="reference internal" href="faq.html">FAQ &amp; Troubleshooting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contributing.html">Contributing</a></li>
 <li class="toctree-l1"><a class="reference internal" href="changelog.html">Changelog</a></li>
 </ul>
 <p aria-level="2" class="caption" role="heading"><span class="caption-text">API Reference</span></p>
@@ -995,15 +996,15 @@ GUI sliders in the <code class="docutils literal notranslate"><span class="pre">
 </section>
 <section id="domain-randomization">
 <h3>Domain Randomization<a class="headerlink" href="#domain-randomization" title="Link to this heading">#</a></h3>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">mjlab.envs.mdp</span><span class="w"> </span><span class="kn">import</span> <span class="n">events</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">mjlab.envs.mdp</span><span class="w"> </span><span class="kn">import</span> <span class="n">dr</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">mjlab.managers.event_manager</span><span class="w"> </span><span class="kn">import</span> <span class="n">EventTermCfg</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">mjlab.managers.scene_entity_config</span><span class="w"> </span><span class="kn">import</span> <span class="n">SceneEntityCfg</span>
 
 <span class="n">EventTermCfg</span><span class="p">(</span>
-    <span class="n">func</span><span class="o">=</span><span class="n">events</span><span class="o">.</span><span class="n">randomize_pd_gains</span><span class="p">,</span>
+    <span class="n">func</span><span class="o">=</span><span class="n">dr</span><span class="o">.</span><span class="n">pd_gains</span><span class="p">,</span>
     <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;reset&quot;</span><span class="p">,</span>
     <span class="n">params</span><span class="o">=</span><span class="p">{</span>
-        <span class="s2">&quot;entity_cfg&quot;</span><span class="p">:</span> <span class="n">SceneEntityCfg</span><span class="p">(</span><span class="s2">&quot;robot&quot;</span><span class="p">,</span> <span class="n">actuator_names</span><span class="o">=</span><span class="p">(</span><span class="s2">&quot;.*&quot;</span><span class="p">,)),</span>
+        <span class="s2">&quot;asset_cfg&quot;</span><span class="p">:</span> <span class="n">SceneEntityCfg</span><span class="p">(</span><span class="s2">&quot;robot&quot;</span><span class="p">,</span> <span class="n">actuator_names</span><span class="o">=</span><span class="p">(</span><span class="s2">&quot;.*&quot;</span><span class="p">,)),</span>
         <span class="s2">&quot;kp_range&quot;</span><span class="p">:</span> <span class="p">(</span><span class="mf">0.8</span><span class="p">,</span> <span class="mf">1.2</span><span class="p">),</span>
         <span class="s2">&quot;kd_range&quot;</span><span class="p">:</span> <span class="p">(</span><span class="mf">0.8</span><span class="p">,</span> <span class="mf">1.2</span><span class="p">),</span>
         <span class="s2">&quot;distribution&quot;</span><span class="p">:</span> <span class="s2">&quot;uniform&quot;</span><span class="p">,</span>
@@ -1012,10 +1013,10 @@ GUI sliders in the <code class="docutils literal notranslate"><span class="pre">
 <span class="p">)</span>
 
 <span class="n">EventTermCfg</span><span class="p">(</span>
-    <span class="n">func</span><span class="o">=</span><span class="n">events</span><span class="o">.</span><span class="n">randomize_effort_limits</span><span class="p">,</span>
+    <span class="n">func</span><span class="o">=</span><span class="n">dr</span><span class="o">.</span><span class="n">effort_limits</span><span class="p">,</span>
     <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;reset&quot;</span><span class="p">,</span>
     <span class="n">params</span><span class="o">=</span><span class="p">{</span>
-        <span class="s2">&quot;entity_cfg&quot;</span><span class="p">:</span> <span class="n">SceneEntityCfg</span><span class="p">(</span><span class="s2">&quot;robot&quot;</span><span class="p">,</span> <span class="n">actuator_names</span><span class="o">=</span><span class="p">(</span><span class="s2">&quot;.*_leg_.*&quot;</span><span class="p">,)),</span>
+        <span class="s2">&quot;asset_cfg&quot;</span><span class="p">:</span> <span class="n">SceneEntityCfg</span><span class="p">(</span><span class="s2">&quot;robot&quot;</span><span class="p">,</span> <span class="n">actuator_names</span><span class="o">=</span><span class="p">(</span><span class="s2">&quot;.*_leg_.*&quot;</span><span class="p">,)),</span>
         <span class="s2">&quot;effort_limit_range&quot;</span><span class="p">:</span> <span class="p">(</span><span class="mf">0.7</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">),</span>  <span class="c1"># Reduce effort by 0-30%</span>
         <span class="s2">&quot;operation&quot;</span><span class="p">:</span> <span class="s2">&quot;scale&quot;</span><span class="p">,</span>
     <span class="p">},</span>
@@ -1132,7 +1133,7 @@ By The mjlab Developers
   
   <div class="footer-item">
     <p class="last-updated">
-  Last updated on Feb 19, 2026.
+  Last updated on Feb 24, 2026.
   <br/>
 </p>
   </div>

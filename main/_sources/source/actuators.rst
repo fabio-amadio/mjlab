@@ -600,15 +600,15 @@ Domain Randomization
 
 .. code-block:: python
 
-    from mjlab.envs.mdp import events
+    from mjlab.envs.mdp import dr
     from mjlab.managers.event_manager import EventTermCfg
     from mjlab.managers.scene_entity_config import SceneEntityCfg
 
     EventTermCfg(
-        func=events.randomize_pd_gains,
+        func=dr.pd_gains,
         mode="reset",
         params={
-            "entity_cfg": SceneEntityCfg("robot", actuator_names=(".*",)),
+            "asset_cfg": SceneEntityCfg("robot", actuator_names=(".*",)),
             "kp_range": (0.8, 1.2),
             "kd_range": (0.8, 1.2),
             "distribution": "uniform",
@@ -617,10 +617,10 @@ Domain Randomization
     )
 
     EventTermCfg(
-        func=events.randomize_effort_limits,
+        func=dr.effort_limits,
         mode="reset",
         params={
-            "entity_cfg": SceneEntityCfg("robot", actuator_names=(".*_leg_.*",)),
+            "asset_cfg": SceneEntityCfg("robot", actuator_names=(".*_leg_.*",)),
             "effort_limit_range": (0.7, 1.0),  # Reduce effort by 0-30%
             "operation": "scale",
         },

@@ -59,7 +59,7 @@
     <link rel="prev" title="mjlab.envs" href="envs.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-    <meta name="docbuild:last-update" content="Feb 19, 2026"/>
+    <meta name="docbuild:last-update" content="Feb 24, 2026"/>
   </head>
   
   
@@ -185,6 +185,7 @@
 <ul class="nav bd-sidenav">
 <li class="toctree-l1"><a class="reference internal" href="../motivation.html">Why mjlab?</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../faq.html">FAQ &amp; Troubleshooting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../contributing.html">Contributing</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../changelog.html">Changelog</a></li>
 </ul>
 <p aria-level="2" class="caption" role="heading"><span class="caption-text">API Reference</span></p>
@@ -473,7 +474,7 @@ document.write(`
 <td><p></p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#mjlab.scene.SceneCfg" title="mjlab.scene.SceneCfg"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SceneCfg</span></code></a></p></td>
-<td><p>SceneCfg(<a href="#id1"><span class="problematic" id="id2">*</span></a>, num_envs: 'int' = 1, env_spacing: 'float' = 2.0, terrain: 'TerrainImporterCfg | None' = None, entities: 'dict[str, EntityCfg]' = &lt;factory&gt;, sensors: 'tuple[SensorCfg, ...]' = &lt;factory&gt;, extent: 'float | None' = None, spec_fn: 'Callable[[mujoco.MjSpec], None] | None' = None)</p></td>
+<td><p>SceneCfg(<a href="#id1"><span class="problematic" id="id2">*</span></a>, num_envs: 'int' = 1, env_spacing: 'float' = 2.0, terrain: 'TerrainEntityCfg | None' = None, entities: 'dict[str, EntityCfg]' = &lt;factory&gt;, sensors: 'tuple[SensorCfg, ...]' = &lt;factory&gt;, extent: 'float | None' = None, spec_fn: 'Callable[[mujoco.MjSpec], None] | None' = None)</p></td>
 </tr>
 </tbody>
 </table>
@@ -594,7 +595,7 @@ to the compiler directive in the XML.</p>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="mjlab.scene.Scene.terrain">
-<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">terrain</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="terrains.html#mjlab.terrains.TerrainImporter" title="mjlab.terrains.terrain_importer.TerrainImporter"><span class="pre">TerrainImporter</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></em><a class="headerlink" href="#mjlab.scene.Scene.terrain" title="Link to this definition">#</a></dt>
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">terrain</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="terrains.html#mjlab.terrains.TerrainEntity" title="mjlab.terrains.terrain_entity.TerrainEntity"><span class="pre">TerrainEntity</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></em><a class="headerlink" href="#mjlab.scene.Scene.terrain" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
 
 <dl class="py property">
@@ -639,7 +640,7 @@ to the compiler directive in the XML.</p>
 <dt class="sig sig-object py" id="mjlab.scene.SceneCfg">
 <em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">mjlab.scene.</span></span><span class="sig-name descname"><span class="pre">SceneCfg</span></span><a class="reference internal" href="../../_modules/mjlab/scene/scene.html#SceneCfg"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mjlab.scene.SceneCfg" title="Link to this definition">#</a></dt>
 <dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
-<p>SceneCfg(<a href="#id3"><span class="problematic" id="id4">*</span></a>, num_envs: ‘int’ = 1, env_spacing: ‘float’ = 2.0, terrain: ‘TerrainImporterCfg | None’ = None, entities: ‘dict[str, EntityCfg]’ = &lt;factory&gt;, sensors: ‘tuple[SensorCfg, …]’ = &lt;factory&gt;, extent: ‘float | None’ = None, spec_fn: ‘Callable[[mujoco.MjSpec], None] | None’ = None)</p>
+<p>SceneCfg(<a href="#id3"><span class="problematic" id="id4">*</span></a>, num_envs: ‘int’ = 1, env_spacing: ‘float’ = 2.0, terrain: ‘TerrainEntityCfg | None’ = None, entities: ‘dict[str, EntityCfg]’ = &lt;factory&gt;, sensors: ‘tuple[SensorCfg, …]’ = &lt;factory&gt;, extent: ‘float | None’ = None, spec_fn: ‘Callable[[mujoco.MjSpec], None] | None’ = None)</p>
 <p><strong>Attributes:</strong></p>
 <div class="pst-scrollable-table-container"><table class="autosummary longtable table">
 <tbody>
@@ -688,7 +689,7 @@ to the compiler directive in the XML.</p>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="mjlab.scene.SceneCfg.terrain">
-<span class="sig-name descname"><span class="pre">terrain</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="terrains.html#mjlab.terrains.TerrainImporterCfg" title="mjlab.terrains.terrain_importer.TerrainImporterCfg"><span class="pre">TerrainImporterCfg</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#mjlab.scene.SceneCfg.terrain" title="Link to this definition">#</a></dt>
+<span class="sig-name descname"><span class="pre">terrain</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="terrains.html#mjlab.terrains.TerrainEntityCfg" title="mjlab.terrains.terrain_entity.TerrainEntityCfg"><span class="pre">TerrainEntityCfg</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#mjlab.scene.SceneCfg.terrain" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
@@ -713,7 +714,7 @@ to the compiler directive in the XML.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="mjlab.scene.SceneCfg.__init__">
-<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">*,</span> <span class="pre">num_envs:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">1,</span> <span class="pre">env_spacing:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">2.0,</span> <span class="pre">terrain:</span> <span class="pre">~mjlab.terrains.terrain_importer.TerrainImporterCfg</span> <span class="pre">|</span> <span class="pre">None</span> <span class="pre">=</span> <span class="pre">None,</span> <span class="pre">entities:</span> <span class="pre">dict[str,</span> <span class="pre">~mjlab.entity.entity.EntityCfg]</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;,</span> <span class="pre">sensors:</span> <span class="pre">tuple[~mjlab.sensor.sensor.SensorCfg,</span> <span class="pre">...]</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;,</span> <span class="pre">extent:</span> <span class="pre">float</span> <span class="pre">|</span> <span class="pre">None</span> <span class="pre">=</span> <span class="pre">None,</span> <span class="pre">spec_fn:</span> <span class="pre">~typing.Callable[[~mujoco._specs.MjSpec],</span> <span class="pre">None]</span> <span class="pre">|</span> <span class="pre">None</span> <span class="pre">=</span> <span class="pre">None</span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span></span><a class="headerlink" href="#mjlab.scene.SceneCfg.__init__" title="Link to this definition">#</a></dt>
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">*,</span> <span class="pre">num_envs:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">1,</span> <span class="pre">env_spacing:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">2.0,</span> <span class="pre">terrain:</span> <span class="pre">~mjlab.terrains.terrain_entity.TerrainEntityCfg</span> <span class="pre">|</span> <span class="pre">None</span> <span class="pre">=</span> <span class="pre">None,</span> <span class="pre">entities:</span> <span class="pre">dict[str,</span> <span class="pre">~mjlab.entity.entity.EntityCfg]</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;,</span> <span class="pre">sensors:</span> <span class="pre">tuple[~mjlab.sensor.sensor.SensorCfg,</span> <span class="pre">...]</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;,</span> <span class="pre">extent:</span> <span class="pre">float</span> <span class="pre">|</span> <span class="pre">None</span> <span class="pre">=</span> <span class="pre">None,</span> <span class="pre">spec_fn:</span> <span class="pre">~typing.Callable[[~mujoco._specs.MjSpec],</span> <span class="pre">None]</span> <span class="pre">|</span> <span class="pre">None</span> <span class="pre">=</span> <span class="pre">None</span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span></span><a class="headerlink" href="#mjlab.scene.SceneCfg.__init__" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
 
 </dd></dl>
@@ -828,7 +829,7 @@ By The mjlab Developers
   
   <div class="footer-item">
     <p class="last-updated">
-  Last updated on Feb 19, 2026.
+  Last updated on Feb 24, 2026.
   <br/>
 </p>
   </div>

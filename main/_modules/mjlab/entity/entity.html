@@ -56,7 +56,7 @@
     <link rel="search" title="Search" href="../../../search.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-    <meta name="docbuild:last-update" content="Feb 19, 2026"/>
+    <meta name="docbuild:last-update" content="Feb 24, 2026"/>
   </head>
   
   
@@ -184,6 +184,7 @@
 <ul class="nav bd-sidenav">
 <li class="toctree-l1"><a class="reference internal" href="../../../source/motivation.html">Why mjlab?</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../source/faq.html">FAQ &amp; Troubleshooting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../source/contributing.html">Contributing</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../source/changelog.html">Changelog</a></li>
 </ul>
 <p aria-level="2" class="caption" role="heading"><span class="caption-text">API Reference</span></p>
@@ -393,6 +394,9 @@ document.write(`
   <span class="n">geoms</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">mujoco</span><span class="o">.</span><span class="n">MjsGeom</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span>
   <span class="n">sites</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">mujoco</span><span class="o">.</span><span class="n">MjsSite</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span>
   <span class="n">tendons</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">mujoco</span><span class="o">.</span><span class="n">MjsTendon</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span>
+  <span class="n">cameras</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">mujoco</span><span class="o">.</span><span class="n">MjsCamera</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span>
+  <span class="n">lights</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">mujoco</span><span class="o">.</span><span class="n">MjsLight</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span>
+  <span class="n">materials</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">mujoco</span><span class="o">.</span><span class="n">MjsMaterial</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span>
   <span class="n">actuators</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">mujoco</span><span class="o">.</span><span class="n">MjsActuator</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span>
 
   <span class="c1"># Indices.</span>
@@ -400,6 +404,9 @@ document.write(`
   <span class="n">geom_ids</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span>
   <span class="n">site_ids</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span>
   <span class="n">tendon_ids</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span>
+  <span class="n">cam_ids</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span>
+  <span class="n">light_ids</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span>
+  <span class="n">mat_ids</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span>
   <span class="n">ctrl_ids</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span>
   <span class="n">joint_ids</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span>
   <span class="n">mocap_id</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span>
@@ -506,9 +513,18 @@ document.write(`
 <a class="viewcode-back" href="../../../source/api/entity.html#mjlab.entity.Entity.__init__">[docs]</a>
   <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cfg</span><span class="p">:</span> <span class="n">EntityCfg</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span> <span class="o">=</span> <span class="n">cfg</span>
-    <span class="bp">self</span><span class="o">.</span><span class="n">_spec</span> <span class="o">=</span> <span class="n">auto_wrap_fixed_base_mocap</span><span class="p">(</span><span class="n">cfg</span><span class="o">.</span><span class="n">spec_fn</span><span class="p">)()</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_actuators</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">actuator</span><span class="o">.</span><span class="n">Actuator</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_build_spec</span><span class="p">()</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_identify_joints</span><span class="p">()</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_apply_spec_editors</span><span class="p">()</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_add_actuators</span><span class="p">()</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_add_initial_state_keyframe</span><span class="p">()</span></div>
 
-    <span class="c1"># Identify free joint and articulated joints.</span>
+
+  <span class="k">def</span><span class="w"> </span><span class="nf">_build_spec</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_spec</span> <span class="o">=</span> <span class="n">auto_wrap_fixed_base_mocap</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="o">.</span><span class="n">spec_fn</span><span class="p">)()</span>
+
+  <span class="k">def</span><span class="w"> </span><span class="nf">_identify_joints</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">_all_joints</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_spec</span><span class="o">.</span><span class="n">joints</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">_free_joint</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">_non_free_joints</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_all_joints</span><span class="p">)</span>
@@ -517,12 +533,6 @@ document.write(`
       <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_free_joint</span><span class="o">.</span><span class="n">name</span><span class="p">:</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_free_joint</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;floating_base_joint&quot;</span>
       <span class="bp">self</span><span class="o">.</span><span class="n">_non_free_joints</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_all_joints</span><span class="p">[</span><span class="mi">1</span><span class="p">:])</span>
-    <span class="bp">self</span><span class="o">.</span><span class="n">_actuators</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">actuator</span><span class="o">.</span><span class="n">Actuator</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
-
-    <span class="bp">self</span><span class="o">.</span><span class="n">_apply_spec_editors</span><span class="p">()</span>
-    <span class="bp">self</span><span class="o">.</span><span class="n">_add_actuators</span><span class="p">()</span>
-    <span class="bp">self</span><span class="o">.</span><span class="n">_add_initial_state_keyframe</span><span class="p">()</span></div>
-
 
   <span class="k">def</span><span class="w"> </span><span class="nf">_apply_spec_editors</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
     <span class="k">for</span> <span class="n">cfg_list</span> <span class="ow">in</span> <span class="p">[</span>
@@ -704,6 +714,34 @@ document.write(`
     <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">actuator_names</span><span class="p">)</span>
 
   <span class="nd">@property</span>
+  <span class="k">def</span><span class="w"> </span><span class="nf">num_tendons</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+    <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tendon_names</span><span class="p">)</span>
+
+  <span class="nd">@property</span>
+  <span class="k">def</span><span class="w"> </span><span class="nf">camera_names</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="o">...</span><span class="p">]:</span>
+    <span class="k">return</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;/&quot;</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">spec</span><span class="o">.</span><span class="n">cameras</span><span class="p">)</span>
+
+  <span class="nd">@property</span>
+  <span class="k">def</span><span class="w"> </span><span class="nf">light_names</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="o">...</span><span class="p">]:</span>
+    <span class="k">return</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">lt</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;/&quot;</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">lt</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">spec</span><span class="o">.</span><span class="n">lights</span><span class="p">)</span>
+
+  <span class="nd">@property</span>
+  <span class="k">def</span><span class="w"> </span><span class="nf">num_cameras</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+    <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">camera_names</span><span class="p">)</span>
+
+  <span class="nd">@property</span>
+  <span class="k">def</span><span class="w"> </span><span class="nf">num_lights</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+    <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">light_names</span><span class="p">)</span>
+
+  <span class="nd">@property</span>
+  <span class="k">def</span><span class="w"> </span><span class="nf">material_names</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="o">...</span><span class="p">]:</span>
+    <span class="k">return</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;/&quot;</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">spec</span><span class="o">.</span><span class="n">materials</span><span class="p">)</span>
+
+  <span class="nd">@property</span>
+  <span class="k">def</span><span class="w"> </span><span class="nf">num_materials</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+    <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">material_names</span><span class="p">)</span>
+
+  <span class="nd">@property</span>
   <span class="k">def</span><span class="w"> </span><span class="nf">root_body</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">mujoco</span><span class="o">.</span><span class="n">MjsBody</span><span class="p">:</span>
     <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">spec</span><span class="o">.</span><span class="n">bodies</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
 
@@ -807,6 +845,45 @@ document.write(`
     <span class="k">if</span> <span class="n">site_subset</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
       <span class="n">site_subset</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">site_names</span>
     <span class="k">return</span> <span class="n">resolve_matching_names</span><span class="p">(</span><span class="n">name_keys</span><span class="p">,</span> <span class="n">site_subset</span><span class="p">,</span> <span class="n">preserve_order</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Entity.find_cameras">
+<a class="viewcode-back" href="../../../source/api/entity.html#mjlab.entity.Entity.find_cameras">[docs]</a>
+  <span class="k">def</span><span class="w"> </span><span class="nf">find_cameras</span><span class="p">(</span>
+    <span class="bp">self</span><span class="p">,</span>
+    <span class="n">name_keys</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+    <span class="n">camera_subset</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">preserve_order</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+  <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]]:</span>
+    <span class="k">if</span> <span class="n">camera_subset</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+      <span class="n">camera_subset</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">camera_names</span>
+    <span class="k">return</span> <span class="n">resolve_matching_names</span><span class="p">(</span><span class="n">name_keys</span><span class="p">,</span> <span class="n">camera_subset</span><span class="p">,</span> <span class="n">preserve_order</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Entity.find_lights">
+<a class="viewcode-back" href="../../../source/api/entity.html#mjlab.entity.Entity.find_lights">[docs]</a>
+  <span class="k">def</span><span class="w"> </span><span class="nf">find_lights</span><span class="p">(</span>
+    <span class="bp">self</span><span class="p">,</span>
+    <span class="n">name_keys</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+    <span class="n">light_subset</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">preserve_order</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+  <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]]:</span>
+    <span class="k">if</span> <span class="n">light_subset</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+      <span class="n">light_subset</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">light_names</span>
+    <span class="k">return</span> <span class="n">resolve_matching_names</span><span class="p">(</span><span class="n">name_keys</span><span class="p">,</span> <span class="n">light_subset</span><span class="p">,</span> <span class="n">preserve_order</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Entity.find_materials">
+<a class="viewcode-back" href="../../../source/api/entity.html#mjlab.entity.Entity.find_materials">[docs]</a>
+  <span class="k">def</span><span class="w"> </span><span class="nf">find_materials</span><span class="p">(</span>
+    <span class="bp">self</span><span class="p">,</span>
+    <span class="n">name_keys</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+    <span class="n">material_subset</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">preserve_order</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+  <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]]:</span>
+    <span class="k">if</span> <span class="n">material_subset</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+      <span class="n">material_subset</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">material_names</span>
+    <span class="k">return</span> <span class="n">resolve_matching_names</span><span class="p">(</span><span class="n">name_keys</span><span class="p">,</span> <span class="n">material_subset</span><span class="p">,</span> <span class="n">preserve_order</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="Entity.compile">
@@ -1396,11 +1473,17 @@ document.write(`
     <span class="n">geoms</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">spec</span><span class="o">.</span><span class="n">geoms</span><span class="p">)</span>
     <span class="n">sites</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">spec</span><span class="o">.</span><span class="n">sites</span><span class="p">)</span>
     <span class="n">tendons</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">spec</span><span class="o">.</span><span class="n">tendons</span><span class="p">)</span>
+    <span class="n">cameras</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">spec</span><span class="o">.</span><span class="n">cameras</span><span class="p">)</span>
+    <span class="n">lights</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">spec</span><span class="o">.</span><span class="n">lights</span><span class="p">)</span>
+    <span class="n">materials</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">spec</span><span class="o">.</span><span class="n">materials</span><span class="p">)</span>
 
     <span class="n">body_ids</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">([</span><span class="n">b</span><span class="o">.</span><span class="n">id</span> <span class="k">for</span> <span class="n">b</span> <span class="ow">in</span> <span class="n">bodies</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">int</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">)</span>
     <span class="n">geom_ids</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">([</span><span class="n">g</span><span class="o">.</span><span class="n">id</span> <span class="k">for</span> <span class="n">g</span> <span class="ow">in</span> <span class="n">geoms</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">int</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">)</span>
     <span class="n">site_ids</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">([</span><span class="n">s</span><span class="o">.</span><span class="n">id</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">sites</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">int</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">)</span>
     <span class="n">tendon_ids</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">([</span><span class="n">t</span><span class="o">.</span><span class="n">id</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">tendons</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">int</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">)</span>
+    <span class="n">cam_ids</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">([</span><span class="n">c</span><span class="o">.</span><span class="n">id</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">cameras</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">int</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">)</span>
+    <span class="n">light_ids</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">([</span><span class="n">lt</span><span class="o">.</span><span class="n">id</span> <span class="k">for</span> <span class="n">lt</span> <span class="ow">in</span> <span class="n">lights</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">int</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">)</span>
+    <span class="n">mat_ids</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">([</span><span class="n">m</span><span class="o">.</span><span class="n">id</span> <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">materials</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">int</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">)</span>
     <span class="n">joint_ids</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">([</span><span class="n">j</span><span class="o">.</span><span class="n">id</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">joints</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">int</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">)</span>
 
     <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_actuated</span><span class="p">:</span>
@@ -1441,11 +1524,17 @@ document.write(`
       <span class="n">geoms</span><span class="o">=</span><span class="n">geoms</span><span class="p">,</span>
       <span class="n">sites</span><span class="o">=</span><span class="n">sites</span><span class="p">,</span>
       <span class="n">tendons</span><span class="o">=</span><span class="n">tendons</span><span class="p">,</span>
+      <span class="n">cameras</span><span class="o">=</span><span class="n">cameras</span><span class="p">,</span>
+      <span class="n">lights</span><span class="o">=</span><span class="n">lights</span><span class="p">,</span>
+      <span class="n">materials</span><span class="o">=</span><span class="n">materials</span><span class="p">,</span>
       <span class="n">actuators</span><span class="o">=</span><span class="n">actuators</span><span class="p">,</span>
       <span class="n">body_ids</span><span class="o">=</span><span class="n">body_ids</span><span class="p">,</span>
       <span class="n">geom_ids</span><span class="o">=</span><span class="n">geom_ids</span><span class="p">,</span>
       <span class="n">site_ids</span><span class="o">=</span><span class="n">site_ids</span><span class="p">,</span>
       <span class="n">tendon_ids</span><span class="o">=</span><span class="n">tendon_ids</span><span class="p">,</span>
+      <span class="n">cam_ids</span><span class="o">=</span><span class="n">cam_ids</span><span class="p">,</span>
+      <span class="n">light_ids</span><span class="o">=</span><span class="n">light_ids</span><span class="p">,</span>
+      <span class="n">mat_ids</span><span class="o">=</span><span class="n">mat_ids</span><span class="p">,</span>
       <span class="n">ctrl_ids</span><span class="o">=</span><span class="n">ctrl_ids</span><span class="p">,</span>
       <span class="n">joint_ids</span><span class="o">=</span><span class="n">joint_ids</span><span class="p">,</span>
       <span class="n">mocap_id</span><span class="o">=</span><span class="n">mocap_id</span><span class="p">,</span>
@@ -1508,7 +1597,7 @@ By The mjlab Developers
   
   <div class="footer-item">
     <p class="last-updated">
-  Last updated on Feb 19, 2026.
+  Last updated on Feb 24, 2026.
   <br/>
 </p>
   </div>

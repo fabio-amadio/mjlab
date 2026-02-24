@@ -59,7 +59,7 @@
     <link rel="prev" title="mjlab.actuator" href="actuator.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-    <meta name="docbuild:last-update" content="Feb 19, 2026"/>
+    <meta name="docbuild:last-update" content="Feb 24, 2026"/>
   </head>
   
   
@@ -185,6 +185,7 @@
 <ul class="nav bd-sidenav">
 <li class="toctree-l1"><a class="reference internal" href="../motivation.html">Why mjlab?</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../faq.html">FAQ &amp; Troubleshooting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../contributing.html">Contributing</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../changelog.html">Changelog</a></li>
 </ul>
 <p aria-level="2" class="caption" role="heading"><span class="caption-text">API Reference</span></p>
@@ -2553,7 +2554,7 @@ execution is handled by Simulation.</p>
 <tr class="row-odd"><td><p><a class="reference internal" href="#mjlab.sensor.SensorContext.__init__" title="mjlab.sensor.SensorContext.__init__"><code class="xref py py-obj docutils literal notranslate"><span class="pre">__init__</span></code></a>(mj_model, model, data, ...)</p></td>
 <td><p></p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#mjlab.sensor.SensorContext.recreate" title="mjlab.sensor.SensorContext.recreate"><code class="xref py py-obj docutils literal notranslate"><span class="pre">recreate</span></code></a>(mj_model)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#mjlab.sensor.SensorContext.recreate" title="mjlab.sensor.SensorContext.recreate"><code class="xref py py-obj docutils literal notranslate"><span class="pre">recreate</span></code></a>(mj_model[, expanded_fields])</p></td>
 <td><p>Recreate the render context after model fields are expanded.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#mjlab.sensor.SensorContext.prepare" title="mjlab.sensor.SensorContext.prepare"><code class="xref py py-obj docutils literal notranslate"><span class="pre">prepare</span></code></a>()</p></td>
@@ -2611,7 +2612,7 @@ execution is handled by Simulation.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="mjlab.sensor.SensorContext.recreate">
-<span class="sig-name descname"><span class="pre">recreate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mj_model</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">MjModel</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../../_modules/mjlab/sensor/sensor_context.html#SensorContext.recreate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mjlab.sensor.SensorContext.recreate" title="Link to this definition">#</a></dt>
+<span class="sig-name descname"><span class="pre">recreate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mj_model</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">MjModel</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">expanded_fields</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#set" title="(in Python v3.14)"><span class="pre">set</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../../_modules/mjlab/sensor/sensor_context.html#SensorContext.recreate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mjlab.sensor.SensorContext.recreate" title="Link to this definition">#</a></dt>
 <dd><p>Recreate the render context after model fields are expanded.</p>
 <p>Called by Simulation.expand_model_fields() for domain randomization.</p>
 </dd></dl>
@@ -2954,7 +2955,7 @@ By The mjlab Developers
   
   <div class="footer-item">
     <p class="last-updated">
-  Last updated on Feb 19, 2026.
+  Last updated on Feb 24, 2026.
   <br/>
 </p>
   </div>
