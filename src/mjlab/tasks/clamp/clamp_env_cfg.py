@@ -97,19 +97,19 @@ def make_clamp_env_cfg() -> ManagerBasedRlEnvCfg:
 
   privileged_terms = {
     "motion_anchor_pos_b": ObservationTermCfg(
-      func=mdp.motion_anchor_pos_b,
+      func=tracking_mdp.motion_anchor_pos_b,
       params={"command_name": "motion"},
     ),
     "motion_anchor_ori_b": ObservationTermCfg(
-      func=mdp.motion_anchor_ori_b,
+      func=tracking_mdp.motion_anchor_ori_b,
       params={"command_name": "motion"},
     ),
     "body_pos": ObservationTermCfg(
-      func=mdp.robot_body_pos_b,
+      func=tracking_mdp.robot_body_pos_b,
       params={"command_name": "motion"},
     ),
     "body_ori": ObservationTermCfg(
-      func=mdp.robot_body_ori_b,
+      func=tracking_mdp.robot_body_ori_b,
       params={"command_name": "motion"},
     ),
     "feet_contact_mask": ObservationTermCfg(
@@ -291,9 +291,9 @@ def make_clamp_env_cfg() -> ManagerBasedRlEnvCfg:
       weight=1.0,
       params={"command_name": "motion", "std": 3.14},
     ),
-    "action_rate_l2": RewardTermCfg(func=tracking_mdp.action_rate_l2, weight=-1e-1),
+    "action_rate_l2": RewardTermCfg(func=mdp.action_rate_l2, weight=-1e-1),
     "joint_limit": RewardTermCfg(
-      func=tracking_mdp.joint_pos_limits,
+      func=mdp.joint_pos_limits,
       weight=-10.0,
       params={"asset_cfg": SceneEntityCfg("robot", joint_names=(".*",))},
     ),
