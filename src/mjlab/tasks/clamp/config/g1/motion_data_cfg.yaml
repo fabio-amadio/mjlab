@@ -41,4 +41,4 @@ subfolders:
   # - name: transitions
   #   weight: 1.0
   # - name: mocap
-  #   weight: 10.0
+  #   weight: 1.0

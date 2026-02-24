@@ -92,7 +92,7 @@ def unitree_g1_flat_clamp_teacher_env_cfg(
     "right_elbow_link",
     "right_wrist_yaw_link",
   )
-  motion_cmd.sampling_mode = "uniform"
+  motion_cmd.sampling_mode = "adaptive"
 
   cfg.events["foot_friction"].params[
     "asset_cfg"

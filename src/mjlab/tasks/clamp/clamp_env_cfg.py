@@ -172,7 +172,7 @@ def make_clamp_env_cfg() -> ManagerBasedRlEnvCfg:
       body_names=(),
       root_body_name="",
       command_step_offsets=DEFAULT_TEACHER_FUTURE_STEPS,
-      sampling_mode="uniform",
+      sampling_mode="adaptive",
     )
   }
 
