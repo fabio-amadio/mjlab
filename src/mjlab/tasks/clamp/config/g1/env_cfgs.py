@@ -15,55 +15,6 @@ from mjlab.sensor import ContactMatch, ContactSensorCfg
 from mjlab.tasks.clamp.clamp_env_cfg import make_clamp_env_cfg
 from mjlab.tasks.clamp.mdp import FutureJointRefAnchorMotionCommandCfg
 
-G1_ALL_BODY_NAMES = (
-  "pelvis",
-  "left_hip_pitch_link",
-  "left_hip_roll_link",
-  "left_hip_yaw_link",
-  "left_knee_link",
-  "left_ankle_pitch_link",
-  "left_ankle_roll_link",
-  "right_hip_pitch_link",
-  "right_hip_roll_link",
-  "right_hip_yaw_link",
-  "right_knee_link",
-  "right_ankle_pitch_link",
-  "right_ankle_roll_link",
-  "waist_yaw_link",
-  "waist_roll_link",
-  "torso_link",
-  "left_shoulder_pitch_link",
-  "left_shoulder_roll_link",
-  "left_shoulder_yaw_link",
-  "left_elbow_link",
-  "left_wrist_roll_link",
-  "left_wrist_pitch_link",
-  "left_wrist_yaw_link",
-  "right_shoulder_pitch_link",
-  "right_shoulder_roll_link",
-  "right_shoulder_yaw_link",
-  "right_elbow_link",
-  "right_wrist_roll_link",
-  "right_wrist_pitch_link",
-  "right_wrist_yaw_link",
-)
-
-G1_KEY_BODY_NAMES = (
-  "left_wrist_yaw_link",
-  "right_wrist_yaw_link",
-  "torso_link",
-  "left_ankle_roll_link",
-  "right_ankle_roll_link",
-  "left_knee_link",
-  "right_knee_link",
-  "left_elbow_link",
-  "right_elbow_link",
-)
-G1_TASK_BODY_NAMES = (
-  "left_wrist_yaw_link",
-  "right_wrist_yaw_link",
-)
-
 DEFAULT_CLAMP_STAGE_A_MOTION_SOURCE = str(
   Path(__file__).resolve().with_name("motion_data_cfg.yaml")
 )
@@ -131,8 +82,23 @@ def unitree_g1_flat_clamp_teacher_env_cfg(
   motion_cmd = cfg.commands["motion"]
   assert isinstance(motion_cmd, FutureJointRefAnchorMotionCommandCfg)
   motion_cmd.motion_file = DEFAULT_CLAMP_STAGE_A_MOTION_SOURCE
-  motion_cmd.anchor_body_name = "pelvis"
-  motion_cmd.body_names = G1_ALL_BODY_NAMES
+  motion_cmd.anchor_body_name = "torso_link"
+  motion_cmd.body_names = (
+    "pelvis",
+    "left_hip_roll_link",
+    "left_knee_link",
+    "left_ankle_roll_link",
+    "right_hip_roll_link",
+    "right_knee_link",
+    "right_ankle_roll_link",
+    "torso_link",
+    "left_shoulder_roll_link",
+    "left_elbow_link",
+    "left_wrist_yaw_link",
+    "right_shoulder_roll_link",
+    "right_elbow_link",
+    "right_wrist_yaw_link",
+  )
   motion_cmd.sampling_mode = "uniform"
 
   cfg.events["foot_friction"].params[
@@ -140,9 +106,22 @@ def unitree_g1_flat_clamp_teacher_env_cfg(
   ].geom_names = r"^(left|right)_foot[1-7]_collision$"
   cfg.events["base_mass"].params["asset_cfg"].body_names = ("pelvis",)
   cfg.events["base_com"].params["asset_cfg"].body_names = ("pelvis",)
-  cfg.events["push_end_effector"].params["asset_cfg"].body_names = G1_TASK_BODY_NAMES
+  cfg.events["push_end_effector"].params["asset_cfg"].body_names = (
+    "left_wrist_yaw_link",
+    "right_wrist_yaw_link",
+  )
 
-  cfg.terminations["pose_termination"].params["body_names"] = G1_KEY_BODY_NAMES
+  cfg.terminations["pose_termination"].params["body_names"] = (
+    "left_wrist_yaw_link",
+    "right_wrist_yaw_link",
+    "torso_link",
+    "left_ankle_roll_link",
+    "right_ankle_roll_link",
+    "left_knee_link",
+    "right_knee_link",
+    "left_elbow_link",
+    "right_elbow_link",
+  )
 
   cfg.viewer.body_name = "pelvis"
 
