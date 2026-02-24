@@ -9,11 +9,20 @@ from mjlab.utils.lab_api.math import euler_xyz_from_quat
 from mjlab.utils.lab_api.math import quat_apply_inverse
 
 from .commands import MotionCommand
-from .rewards import _get_body_indexes
 
 if TYPE_CHECKING:
   from mjlab.envs import ManagerBasedRlEnv
   from mjlab.managers.scene_entity_config import SceneEntityCfg
+
+
+def _get_body_indexes(
+  command: MotionCommand, body_names: tuple[str, ...] | None
+) -> list[int]:
+  return [
+    i
+    for i, name in enumerate(command.cfg.body_names)
+    if (body_names is None) or (name in body_names)
+  ]
 
 
 def bad_root_height_diff(

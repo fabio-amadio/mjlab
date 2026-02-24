@@ -17,6 +17,7 @@ from mjlab.scene import SceneCfg
 from mjlab.sim import MujocoCfg, SimulationCfg
 from mjlab.tasks.clamp import mdp
 from mjlab.tasks.clamp.mdp import FutureJointRefAnchorMotionCommandCfg
+from mjlab.tasks.tracking import mdp as tracking_mdp
 from mjlab.tasks.velocity import mdp as velocity_mdp
 from mjlab.terrains import TerrainImporterCfg
 from mjlab.utils.noise import UniformNoiseCfg as Unoise
@@ -270,103 +271,46 @@ def make_clamp_env_cfg() -> ManagerBasedRlEnvCfg:
   ##
 
   rewards: dict[str, RewardTermCfg] = {
-    "tracking_joint_dof": RewardTermCfg(
-      func=mdp.motion_tracking_joint_dof,
-      weight=0.6,
-      params={
-        "command_name": "motion",
-        "pos_scale": 0.15,
-      },
+    "motion_global_root_pos": RewardTermCfg(
+      func=tracking_mdp.motion_global_anchor_position_error_exp,
+      weight=0.5,
+      params={"command_name": "motion", "std": 0.3},
     ),
-    "tracking_joint_vel": RewardTermCfg(
-      func=mdp.motion_tracking_joint_vel,
-      weight=0.2,
-      params={
-        "command_name": "motion",
-        "vel_scale": 0.01,
-      },
+    "motion_global_root_ori": RewardTermCfg(
+      func=tracking_mdp.motion_global_anchor_orientation_error_exp,
+      weight=0.5,
+      params={"command_name": "motion", "std": 0.4},
     ),
-    "tracking_root_pose": RewardTermCfg(
-      func=mdp.motion_tracking_root_pose,
-      weight=0.6,
-      params={"command_name": "motion", "root_pose_scale": 5.0, "in_world_frame": True},
-    ),
-    "tracking_root_vel": RewardTermCfg(
-      func=mdp.motion_tracking_root_vel,
+    "motion_body_pos": RewardTermCfg(
+      func=tracking_mdp.motion_relative_body_position_error_exp,
       weight=1.0,
-      params={"command_name": "motion", "root_vel_scale": 1.0, "in_world_frame": False},
+      params={"command_name": "motion", "std": 0.3},
     ),
-    "tracking_keybody_pos": RewardTermCfg(
-      func=mdp.motion_tracking_keybody_pos,
-      weight=2.0,
-      params={
-        "command_name": "motion",
-        "key_body_names": (),  # Set in robot cfg.
-        "key_body_pos_scale": 10.0,
-        "in_world_frame": False,
-      },
+    "motion_body_ori": RewardTermCfg(
+      func=tracking_mdp.motion_relative_body_orientation_error_exp,
+      weight=1.0,
+      params={"command_name": "motion", "std": 0.4},
     ),
-    "feet_slip": RewardTermCfg(
-      func=velocity_mdp.feet_slip,
-      weight=-0.1,
-      params={
-        "sensor_name": "feet_ground_contact",
-        "command_name": "motion",
-        # Motion command is not a velocity command; keep this always active.
-        "command_threshold": -1.0,
-        "asset_cfg": SceneEntityCfg("robot", site_names=()),  # Set in robot cfg.
-      },
+    "motion_body_lin_vel": RewardTermCfg(
+      func=tracking_mdp.motion_global_body_linear_velocity_error_exp,
+      weight=1.0,
+      params={"command_name": "motion", "std": 1.0},
     ),
-    "soft_landing": RewardTermCfg(
-      func=velocity_mdp.soft_landing,
-      weight=-1.0e-5,
-      params={
-        "sensor_name": "feet_ground_contact",
-        # Motion command is not a velocity command; keep this always active.
-        "command_name": "motion",
-        "command_threshold": -1.0,
-      },
+    "motion_body_ang_vel": RewardTermCfg(
+      func=tracking_mdp.motion_global_body_angular_velocity_error_exp,
+      weight=1.0,
+      params={"command_name": "motion", "std": 3.14},
+    ),
+    "action_rate_l2": RewardTermCfg(func=tracking_mdp.action_rate_l2, weight=-1e-1),
+    "joint_limit": RewardTermCfg(
+      func=tracking_mdp.joint_pos_limits,
+      weight=-10.0,
+      params={"asset_cfg": SceneEntityCfg("robot", joint_names=(".*",))},
     ),
     "self_collisions": RewardTermCfg(
-      func=velocity_mdp.self_collision_cost,
-      weight=-0.1,
+      func=tracking_mdp.self_collision_cost,
+      weight=-10.0,
       params={"sensor_name": "self_collision"},
-    ),
-    "dof_pos_limits": RewardTermCfg(
-      func=mdp.joint_pos_limits,
-      weight=-5.0,
-      params={"asset_cfg": SceneEntityCfg("robot", joint_names=(".*",))},
-    ),
-    "joint_torques_l2": RewardTermCfg(
-      func=mdp.joint_torques_l2,
-      # Calibrated for CLAMP scale where joint_torques_l2 is O(1e3).
-      weight=-1.0e-4,
-      params={"asset_cfg": SceneEntityCfg("robot")},
-    ),
-    "dof_vel": RewardTermCfg(
-      func=mdp.joint_vel_l2,
-      weight=-1.0e-4,
-      params={"asset_cfg": SceneEntityCfg("robot", joint_names=(".*",))},
-    ),
-    "dof_acc": RewardTermCfg(
-      func=mdp.joint_acc_l2,
-      weight=-5.0e-8,
-      params={"asset_cfg": SceneEntityCfg("robot", joint_names=(".*",))},
-    ),
-    "action_rate": RewardTermCfg(func=mdp.action_rate_l2, weight=-0.01),
-    "feet_air_time_twist": RewardTermCfg(
-      func=mdp.feet_air_time_twist,
-      weight=5.0,
-      params={
-        "sensor_name": "feet_ground_contact",
-        "command_name": "motion",
-        "target_air_time": 0.5,
-      },
-    ),
-    "ang_vel_xy": RewardTermCfg(
-      func=velocity_mdp.body_angular_velocity_penalty,
-      weight=-0.01,
-      params={"asset_cfg": SceneEntityCfg("robot", body_names=())},  # Set in robot cfg.
     ),
   }
 
