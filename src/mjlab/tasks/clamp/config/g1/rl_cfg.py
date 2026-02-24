@@ -8,7 +8,7 @@ from mjlab.rl import (
 
 
 def unitree_g1_clamp_teacher_ppo_runner_cfg() -> RslRlOnPolicyRunnerCfg:
-  """Create RL runner configuration for CLAMP Stage-A teacher training."""
+  """Create RL runner configuration for CLAMP teacher training."""
   return RslRlOnPolicyRunnerCfg(
     seed=1,
     policy=RslRlPpoActorCriticCfg(
@@ -34,8 +34,8 @@ def unitree_g1_clamp_teacher_ppo_runner_cfg() -> RslRlOnPolicyRunnerCfg:
       desired_kl=0.01,
       max_grad_norm=1.0,
     ),
-    experiment_name="g1_clamp_teacher_stage_a",
-    save_interval=500,
+    experiment_name="g1_clamp_teacher",
+    save_interval=3000,
     num_steps_per_env=24,
     max_iterations=30_000,
   )

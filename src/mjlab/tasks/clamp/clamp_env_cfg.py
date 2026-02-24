@@ -258,7 +258,7 @@ def make_clamp_env_cfg() -> ManagerBasedRlEnvCfg:
   }
 
   ##
-  # Rewards (Stage-A teacher)
+  # Rewards (CLAMP teacher)
   ##
 
   rewards: dict[str, RewardTermCfg] = {

@@ -1,4 +1,4 @@
-"""Unitree G1 CLAMP Stage-A environment configuration."""
+"""Unitree G1 CLAMP teacher environment configuration."""
 
 from copy import deepcopy
 from pathlib import Path
@@ -15,7 +15,7 @@ from mjlab.sensor import ContactMatch, ContactSensorCfg
 from mjlab.tasks.clamp.clamp_env_cfg import make_clamp_env_cfg
 from mjlab.tasks.clamp.mdp import FutureJointRefAnchorMotionCommandCfg
 
-DEFAULT_CLAMP_STAGE_A_MOTION_SOURCE = str(
+DEFAULT_CLAMP_MOTION_SOURCE = str(
   Path(__file__).resolve().with_name("motion_data_cfg.yaml")
 )
 
@@ -23,7 +23,7 @@ DEFAULT_CLAMP_STAGE_A_MOTION_SOURCE = str(
 def unitree_g1_flat_clamp_teacher_env_cfg(
   play: bool = False,
 ) -> ManagerBasedRlEnvCfg:
-  """Create Unitree G1 CLAMP Stage-A teacher configuration."""
+  """Create Unitree G1 CLAMP teacher configuration."""
   cfg = make_clamp_env_cfg()
 
   robot_cfg = get_g1_robot_cfg()
@@ -73,7 +73,7 @@ def unitree_g1_flat_clamp_teacher_env_cfg(
 
   motion_cmd = cfg.commands["motion"]
   assert isinstance(motion_cmd, FutureJointRefAnchorMotionCommandCfg)
-  motion_cmd.motion_file = DEFAULT_CLAMP_STAGE_A_MOTION_SOURCE
+  motion_cmd.motion_file = DEFAULT_CLAMP_MOTION_SOURCE
   motion_cmd.anchor_body_name = "torso_link"
   motion_cmd.root_body_name = "pelvis"
   motion_cmd.body_names = (
