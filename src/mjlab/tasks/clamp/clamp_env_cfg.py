@@ -32,15 +32,6 @@ VELOCITY_RANGE = {
   "yaw": (-0.78, 0.78),
 }
 
-PUSH_VELOCITY_RANGE = {
-  "x": (-1.0, 1.0),
-  "y": (-1.0, 1.0),
-  "z": (0.0, 0.0),
-  "roll": (0.0, 0.0),
-  "pitch": (0.0, 0.0),
-  "yaw": (0.0, 0.0),
-}
-
 DEFAULT_TEACHER_FUTURE_STEPS = (
   1,
   5,
@@ -193,16 +184,16 @@ def make_clamp_env_cfg() -> ManagerBasedRlEnvCfg:
     "push_robot": EventTermCfg(
       func=mdp.push_by_setting_velocity,
       mode="interval",
-      interval_range_s=(4.0, 4.0),
-      params={"velocity_range": PUSH_VELOCITY_RANGE},
+      interval_range_s=(1.0, 3.0),
+      params={"velocity_range": VELOCITY_RANGE},
     ),
     "push_end_effector": EventTermCfg(
       func=mdp.apply_external_force_torque,
       mode="interval",
       interval_range_s=(2.0, 2.0),
       params={
-        "force_range": (-20.0, 20.0),
-        "torque_range": (0.0, 0.0),
+        "force_range": (-10.0, 10.0),
+        "torque_range": (-1.0, 1.0),
         "asset_cfg": SceneEntityCfg("robot", body_names=()),  # Set in robot cfg.
       },
     ),
@@ -226,7 +217,7 @@ def make_clamp_env_cfg() -> ManagerBasedRlEnvCfg:
         "operation": "add",
         "field": "body_ipos",
         "ranges": {
-          0: (-0.05, 0.05),
+          0: (-0.025, 0.025),
           1: (-0.05, 0.05),
           2: (-0.05, 0.05),
         },
@@ -251,7 +242,7 @@ def make_clamp_env_cfg() -> ManagerBasedRlEnvCfg:
         "asset_cfg": SceneEntityCfg("robot", geom_names=()),  # Set in robot cfg.
         "operation": "abs",
         "field": "geom_friction",
-        "ranges": (0.1, 2.0),
+        "ranges": (0.3, 1.2),
         "shared_random": True,  # All foot geoms share the same friction.
       },
     ),

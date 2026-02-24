@@ -105,7 +105,7 @@ def unitree_g1_flat_clamp_teacher_env_cfg(
     "asset_cfg"
   ].geom_names = r"^(left|right)_foot[1-7]_collision$"
   cfg.events["base_mass"].params["asset_cfg"].body_names = ("pelvis",)
-  cfg.events["base_com"].params["asset_cfg"].body_names = ("pelvis",)
+  cfg.events["base_com"].params["asset_cfg"].body_names = ("torso_link",)
   cfg.events["push_end_effector"].params["asset_cfg"].body_names = (
     "left_wrist_yaw_link",
     "right_wrist_yaw_link",
