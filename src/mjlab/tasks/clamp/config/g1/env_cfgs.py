@@ -74,10 +74,9 @@ def unitree_g1_flat_clamp_teacher_env_cfg(
   motion_cmd = cfg.commands["motion"]
   assert isinstance(motion_cmd, FutureJointRefAnchorMotionCommandCfg)
   motion_cmd.motion_file = DEFAULT_CLAMP_MOTION_SOURCE
-  motion_cmd.anchor_body_name = "torso_link"
+  motion_cmd.anchor_body_name = "pelvis"
   motion_cmd.root_body_name = "pelvis"
   motion_cmd.body_names = (
-    "pelvis",
     "left_hip_roll_link",
     "left_knee_link",
     "left_ankle_roll_link",
