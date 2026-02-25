@@ -33,8 +33,9 @@ def debug_visualize_motion_command(
 
     for batch in env_indices:
       qpos = np.zeros(command._env.sim.mj_model.nq)
-      qpos[free_joint_q_adr[0:3]] = command.anchor_pos_w[batch].cpu().numpy()
-      qpos[free_joint_q_adr[3:7]] = command.anchor_quat_w[batch].cpu().numpy()
+      # Free-joint pose must use the articulated root body (not tracking anchor).
+      qpos[free_joint_q_adr[0:3]] = command.root_pos_w[batch].cpu().numpy()
+      qpos[free_joint_q_adr[3:7]] = command.root_quat_w[batch].cpu().numpy()
       qpos[joint_q_adr] = command.joint_pos[batch].cpu().numpy()
       visualizer.add_ghost_mesh(qpos, model=command._ghost_model, label=f"ghost_{batch}")
 
