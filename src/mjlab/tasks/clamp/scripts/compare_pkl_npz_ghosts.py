@@ -27,9 +27,9 @@ import tyro
 
 from mjlab.envs import ManagerBasedRlEnv
 from mjlab.rl import RslRlVecEnvWrapper
-from mjlab.tasks.registry import load_env_cfg, load_rl_cfg
 from mjlab.tasks.clamp.mdp.motion_command import MotionCommand
 from mjlab.tasks.clamp.mdp.motion_library import NpzMotionLibrary
+from mjlab.tasks.registry import load_env_cfg, load_rl_cfg
 from mjlab.viewer import NativeMujocoViewer, ViserPlayViewer
 
 _DEFAULT_NPZ_MOTION_SOURCE = str(

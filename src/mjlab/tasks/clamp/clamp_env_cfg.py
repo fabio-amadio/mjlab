@@ -311,9 +311,8 @@ def make_clamp_env_cfg() -> ManagerBasedRlEnvCfg:
 
   terminations: dict[str, TerminationTermCfg] = {
     "time_out": TerminationTermCfg(
-      func=mdp.motion_reference_exhausted,
+      func=mdp.time_out,
       time_out=True,
-      params={"command_name": "motion", "include_future_horizon": True},
     ),
     "anchor_pos": TerminationTermCfg(
       func=tracking_mdp.bad_anchor_pos_z_only,
@@ -367,5 +366,5 @@ def make_clamp_env_cfg() -> ManagerBasedRlEnvCfg:
       ),
     ),
     decimation=4,
-    episode_length_s=300.0,
+    episode_length_s=10.0,
   )

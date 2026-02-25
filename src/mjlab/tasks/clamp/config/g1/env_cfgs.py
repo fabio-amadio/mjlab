@@ -118,11 +118,7 @@ def unitree_g1_flat_clamp_teacher_env_cfg(
 
     cfg.observations["policy"].enable_corruption = False
     cfg.observations["critic"].enable_corruption = False
-    time_out_term = cfg.terminations.get("time_out")
     cfg.terminations.clear()
-    if time_out_term is not None:
-      # Keep only clip-end reset for smooth reference playback loops.
-      cfg.terminations["time_out"] = time_out_term
     cfg.events.pop("push_robot", None)
     cfg.events.pop("push_end_effector", None)
     cfg.events.pop("action_delay", None)

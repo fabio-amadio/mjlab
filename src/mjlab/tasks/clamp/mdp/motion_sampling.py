@@ -52,7 +52,7 @@ def adaptive_sampling(command: MotionCommand, env_ids: torch.Tensor) -> None:
     command._current_motion_failed.zero_()
     command._current_phase_failed.zero_()
 
-    episode_failed = command._env.termination_manager.dones[env_ids]
+    episode_failed = command._env.termination_manager.terminated[env_ids]
     if torch.any(episode_failed):
       failed_env_ids = env_ids[episode_failed]
       failed_motion_ids = command.motion_ids[failed_env_ids]
@@ -160,7 +160,7 @@ def adaptive_sampling(command: MotionCommand, env_ids: torch.Tensor) -> None:
   assert command.motion is not None
   assert command.bin_failed_count is not None
   assert command._current_bin_failed is not None
-  episode_failed = command._env.termination_manager.dones[env_ids]
+  episode_failed = command._env.termination_manager.terminated[env_ids]
   command._current_bin_failed.zero_()
   if torch.any(episode_failed):
     current_bin_index = torch.clamp(
@@ -331,6 +331,25 @@ def resample_command(command: MotionCommand, env_ids: torch.Tensor) -> None:
 
 
 def update_command(command: MotionCommand) -> None:
+  command.time_steps += 1
+
+  resample_env_ids: torch.Tensor
+  if command._uses_motion_library:
+    assert command.motion_lib is not None
+    horizon_s = _future_horizon_s(command)
+    current_times = command._current_times_s()
+    motion_lengths = command.motion_lib.get_motion_length(command.motion_ids)
+    resample_env_ids = torch.where(current_times + horizon_s >= motion_lengths)[0]
+  else:
+    assert command.motion is not None
+    max_future_steps = _max_future_offset_steps(command)
+    resample_env_ids = torch.where(
+      command.time_steps + max_future_steps >= command.motion.time_step_total
+    )[0]
+
+  if resample_env_ids.numel() > 0:
+    command._resample_command(resample_env_ids)
+
   if command._uses_motion_library:
     command._refresh_motion_frame()
   else:
@@ -379,5 +398,3 @@ def update_command(command: MotionCommand) -> None:
         + (1 - command.cfg.adaptive_alpha) * command.bin_failed_count
       )
       command._current_bin_failed.zero_()
-
-  command.time_steps += 1

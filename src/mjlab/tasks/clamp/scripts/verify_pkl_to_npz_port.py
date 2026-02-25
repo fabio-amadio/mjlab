@@ -26,7 +26,6 @@ from typing import Literal
 import numpy as np
 from tqdm import tqdm
 
-
 QuatConvention = Literal["xyzw", "wxyz", "auto"]
 
 
