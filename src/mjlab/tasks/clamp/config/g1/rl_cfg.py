@@ -35,7 +35,7 @@ def unitree_g1_clamp_teacher_ppo_runner_cfg() -> RslRlOnPolicyRunnerCfg:
       max_grad_norm=1.0,
     ),
     experiment_name="g1_clamp_teacher",
-    save_interval=3000,
+    save_interval=1000,
     num_steps_per_env=24,
     max_iterations=30_000,
   )
