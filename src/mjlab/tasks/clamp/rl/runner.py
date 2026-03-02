@@ -63,7 +63,11 @@ class ClampOnPolicyRunner(MjlabOnPolicyRunner):
       policy_cfg.setdefault("motion_obs_dim", motion_obs_dim)
       policy_cfg.setdefault("motion_steps", motion_steps)
     policy_cfg.setdefault("motion_latent_dim", 128)
-    policy_cfg.setdefault("motion_channels", 20)
+    policy_cfg.setdefault("motion_proj_channels", 60)
+    policy_cfg.setdefault("motion_conv_channels", (40, 20))
+    policy_cfg.setdefault("motion_conv_kernel_sizes", (6, 4))
+    policy_cfg.setdefault("motion_conv_strides", (2, 2))
+    policy_cfg.setdefault("print_model_structure", False)
     policy_cfg.setdefault("layer_norm", True)
     train_cfg["policy"] = policy_cfg
 
