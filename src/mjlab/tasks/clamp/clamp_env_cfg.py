@@ -53,8 +53,6 @@ DEFAULT_TEACHER_FUTURE_STEPS = (
   90,
   95,
 )
-DEFAULT_SHORT_IO_HISTORY_STEPS = 5
-DEFAULT_LONG_IO_HISTORY_STEPS = 50
 
 
 def make_clamp_env_cfg() -> ManagerBasedRlEnvCfg:
@@ -71,47 +69,31 @@ def make_clamp_env_cfg() -> ManagerBasedRlEnvCfg:
     ),
   }
 
-  proprio_terms: dict[str, ObservationTermCfg] = {
-    "short_io": ObservationTermCfg(
-      func=mdp.proprio_history,
-      history_length=DEFAULT_SHORT_IO_HISTORY_STEPS,
-      flatten_history_dim=True,
+  proprio_terms = {
+    "base_lin_vel": ObservationTermCfg(
+      func=mdp.builtin_sensor,
+      params={"sensor_name": "robot/imu_lin_vel"},
+      noise=Unoise(n_min=-0.5, n_max=0.5),
     ),
+    "base_ang_vel": ObservationTermCfg(
+      func=mdp.builtin_sensor,
+      params={"sensor_name": "robot/imu_ang_vel"},
+      noise=Unoise(n_min=-0.2, n_max=0.2),
+    ),
+    "projected_gravity": ObservationTermCfg(
+      func=mdp.projected_gravity,
+      noise=Unoise(n_min=-0.05, n_max=0.05),
+    ),
+    "joint_pos": ObservationTermCfg(
+      func=mdp.joint_pos_rel,
+      noise=Unoise(n_min=-0.01, n_max=0.01),
+    ),
+    "joint_vel": ObservationTermCfg(
+      func=mdp.joint_vel_rel,
+      noise=Unoise(n_min=-1.5, n_max=1.5),
+    ),
+    "actions": ObservationTermCfg(func=mdp.last_action),
   }
-  if DEFAULT_LONG_IO_HISTORY_STEPS > 0:
-    proprio_terms["long_io"] = ObservationTermCfg(
-      func=mdp.proprio_history,
-      history_length=DEFAULT_LONG_IO_HISTORY_STEPS,
-      flatten_history_dim=True,
-    )
-
-  proprio_terms.update(
-    {
-      "base_lin_vel": ObservationTermCfg(
-        func=mdp.builtin_sensor,
-        params={"sensor_name": "robot/imu_lin_vel"},
-        noise=Unoise(n_min=-0.5, n_max=0.5),
-      ),
-      "base_ang_vel": ObservationTermCfg(
-        func=mdp.builtin_sensor,
-        params={"sensor_name": "robot/imu_ang_vel"},
-        noise=Unoise(n_min=-0.2, n_max=0.2),
-      ),
-      "projected_gravity": ObservationTermCfg(
-        func=mdp.projected_gravity,
-        noise=Unoise(n_min=-0.05, n_max=0.05),
-      ),
-      "joint_pos": ObservationTermCfg(
-        func=mdp.joint_pos_rel,
-        noise=Unoise(n_min=-0.01, n_max=0.01),
-      ),
-      "joint_vel": ObservationTermCfg(
-        func=mdp.joint_vel_rel,
-        noise=Unoise(n_min=-1.5, n_max=1.5),
-      ),
-      "actions": ObservationTermCfg(func=mdp.last_action),
-    }
-  )
 
   privileged_terms = {
     "motion_anchor_pos_b": ObservationTermCfg(

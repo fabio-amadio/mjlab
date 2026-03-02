@@ -18,74 +18,53 @@ class MotionEncoder(nn.Module):
     num_steps: int,
     latent_dim: int,
     activation: str = "elu",
-    proj_channels: int = 60,
-    conv_channels: tuple[int, ...] | list[int] = (40, 20),
-    conv_kernel_sizes: tuple[int, ...] | list[int] = (6, 4),
-    conv_strides: tuple[int, ...] | list[int] = (2, 2),
+    channel_size: int = 20,
   ) -> None:
     super().__init__()
-    self.num_steps = int(num_steps)
-    if self.num_steps <= 0:
-      raise ValueError(f"`num_steps` must be positive, got {self.num_steps}.")
-    input_dim_per_step = int(input_dim_per_step)
-    if input_dim_per_step <= 0:
-      raise ValueError(
-        f"`input_dim_per_step` must be positive, got {input_dim_per_step}."
-      )
-    latent_dim = int(latent_dim)
-    if latent_dim <= 0:
-      raise ValueError(f"`latent_dim` must be positive, got {latent_dim}.")
-    self.proj_dim = int(proj_channels)
-    if self.proj_dim <= 0:
-      raise ValueError(f"`proj_channels` must be positive, got {self.proj_dim}.")
-
-    conv_channels = tuple(int(v) for v in conv_channels)
-    conv_kernel_sizes = tuple(int(v) for v in conv_kernel_sizes)
-    conv_strides = tuple(int(v) for v in conv_strides)
-    if len(conv_channels) == 0:
-      raise ValueError("`conv_channels` must contain at least one value.")
-    if not (
-      len(conv_channels) == len(conv_kernel_sizes) == len(conv_strides)
-    ):
-      raise ValueError(
-        "Conv config lengths must match: "
-        f"conv_layers={len(conv_channels)}, kernels={len(conv_kernel_sizes)}, strides={len(conv_strides)}."
-      )
-    if any(v <= 0 for v in conv_channels):
-      raise ValueError(f"`conv_channels` must be positive, got {conv_channels}.")
-    if any(v <= 0 for v in conv_kernel_sizes):
-      raise ValueError(
-        f"`conv_kernel_sizes` must be positive, got {conv_kernel_sizes}."
-      )
-    if any(v <= 0 for v in conv_strides):
-      raise ValueError(f"`conv_strides` must be positive, got {conv_strides}.")
-
+    self.num_steps = num_steps
+    self.proj_dim = 3 * channel_size
     self.proj = nn.Sequential(
       nn.Linear(input_dim_per_step, self.proj_dim),
       resolve_nn_activation(activation),
     )
-    conv_layers: list[nn.Module] = []
-    in_channels = self.proj_dim
-    for out_channels, kernel, stride in zip(
-      conv_channels, conv_kernel_sizes, conv_strides, strict=True
-    ):
-      conv_layers.append(
-        nn.Conv1d(in_channels, out_channels, kernel_size=kernel, stride=stride)
-      )
-      conv_layers.append(resolve_nn_activation(activation))
-      in_channels = out_channels
-    self.conv = nn.Sequential(*conv_layers)
-    self.flatten = nn.Flatten()
 
-    conv_out_length = self.num_steps
-    for kernel, stride in zip(conv_kernel_sizes, conv_strides, strict=True):
-      conv_out_length = (conv_out_length - kernel) // stride + 1
-      if conv_out_length <= 0:
-        raise ValueError(
-          "Invalid temporal conv config for given `num_steps`. "
-          f"num_steps={self.num_steps}, conv_kernel_sizes={conv_kernel_sizes}, conv_strides={conv_strides}"
-        )
-    conv_out_dim = int(conv_channels[-1] * conv_out_length)
+    if num_steps == 50:
+      self.conv = nn.Sequential(
+        nn.Conv1d(self.proj_dim, 2 * channel_size, kernel_size=8, stride=4),
+        resolve_nn_activation(activation),
+        nn.Conv1d(2 * channel_size, channel_size, kernel_size=5, stride=1),
+        resolve_nn_activation(activation),
+        nn.Conv1d(channel_size, channel_size, kernel_size=5, stride=1),
+        resolve_nn_activation(activation),
+        nn.Flatten(),
+      )
+      conv_out_dim = channel_size * 3
+    elif num_steps == 20:
+      self.conv = nn.Sequential(
+        nn.Conv1d(self.proj_dim, 2 * channel_size, kernel_size=6, stride=2),
+        resolve_nn_activation(activation),
+        nn.Conv1d(2 * channel_size, channel_size, kernel_size=4, stride=2),
+        resolve_nn_activation(activation),
+        nn.Flatten(),
+      )
+      conv_out_dim = channel_size * 3
+    elif num_steps == 10:
+      self.conv = nn.Sequential(
+        nn.Conv1d(self.proj_dim, 2 * channel_size, kernel_size=4, stride=2),
+        resolve_nn_activation(activation),
+        nn.Conv1d(2 * channel_size, channel_size, kernel_size=2, stride=1),
+        resolve_nn_activation(activation),
+        nn.Flatten(),
+      )
+      conv_out_dim = channel_size * 3
+    elif num_steps == 1:
+      self.conv = nn.Flatten()
+      conv_out_dim = self.proj_dim
+    else:
+      raise ValueError(
+        f"Unsupported motion step count {num_steps}. Expected one of (1, 10, 20, 50)."
+      )
+
     self.out = nn.Linear(conv_out_dim, latent_dim)
 
   def forward(self, motion_obs: torch.Tensor) -> torch.Tensor:
@@ -93,7 +72,7 @@ class MotionEncoder(nn.Module):
     step_obs = motion_obs.reshape(num_envs, self.num_steps, -1)
     projected = self.proj(step_obs.reshape(num_envs * self.num_steps, -1))
     projected = projected.reshape(num_envs, self.num_steps, -1).permute(0, 2, 1)
-    temporal = self.flatten(self.conv(projected))
+    temporal = self.conv(projected)
     return self.out(temporal)
 
 
@@ -118,24 +97,11 @@ class ClampActorCriticMimic(nn.Module):
     motion_obs_dim: int = 1320,
     motion_steps: int = 20,
     motion_latent_dim: int = 128,
-    motion_proj_channels: int = 60,
-    motion_conv_channels: tuple[int, ...] | list[int] = (40, 20),
-    motion_conv_kernel_sizes: tuple[int, ...] | list[int] = (6, 4),
-    motion_conv_strides: tuple[int, ...] | list[int] = (2, 2),
-    short_io_obs_dim: int = 0,
-    long_io_obs_dim: int = 0,
-    long_io_steps: int = 1,
-    long_io_latent_dim: int = 128,
-    long_io_proj_channels: int = 60,
-    long_io_conv_channels: tuple[int, ...] | list[int] = (40, 20, 20),
-    long_io_conv_kernel_sizes: tuple[int, ...] | list[int] = (8, 5, 5),
-    long_io_conv_strides: tuple[int, ...] | list[int] = (4, 1, 1),
+    motion_channels: int = 20,
     layer_norm: bool = True,
     fix_action_std: bool = False,
     action_std: tuple[float, ...] | list[float] | None = None,
     share_obs_normalizer: bool | None = None,
-    print_model_structure: bool = False,
-    share_temporal_encoders: bool = False,
     **kwargs,
   ):
     del kwargs
@@ -144,31 +110,17 @@ class ClampActorCriticMimic(nn.Module):
     self.obs_groups = obs_groups
     self.motion_obs_dim = int(motion_obs_dim)
     self.motion_steps = int(motion_steps)
-    self.short_io_obs_dim = int(short_io_obs_dim)
-    self.long_io_obs_dim = int(long_io_obs_dim)
-    self.long_io_steps = int(long_io_steps)
     self.state_dependent_std = bool(state_dependent_std)
     self.noise_std_type = noise_std_type
-    self.print_model_structure = bool(print_model_structure)
 
     if self.motion_obs_dim <= 0:
       raise ValueError(f"`motion_obs_dim` must be positive, got {self.motion_obs_dim}.")
     if self.motion_steps <= 0:
       raise ValueError(f"`motion_steps` must be positive, got {self.motion_steps}.")
-    if self.motion_obs_dim > 0 and self.motion_obs_dim % self.motion_steps != 0:
+    if self.motion_obs_dim % self.motion_steps != 0:
       raise ValueError(
         "Motion observation dimension must be divisible by motion_steps: "
         f"{self.motion_obs_dim} % {self.motion_steps} != 0."
-      )
-    if self.long_io_steps <= 0:
-      raise ValueError(f"`long_io_steps` must be positive, got {self.long_io_steps}.")
-    if (
-      self.long_io_obs_dim > 0
-      and self.long_io_obs_dim % self.long_io_steps != 0
-    ):
-      raise ValueError(
-        "Long IO observation dimension must be divisible by long_io_steps: "
-        f"{self.long_io_obs_dim} % {self.long_io_steps} != 0."
       )
 
     num_actor_obs = 0
@@ -180,66 +132,29 @@ class ClampActorCriticMimic(nn.Module):
       assert len(obs[obs_group].shape) == 2, "Only 1D observations are supported."
       num_critic_obs += obs[obs_group].shape[-1]
 
-    encoded_prefix_dim = (
-      self.motion_obs_dim + self.short_io_obs_dim + self.long_io_obs_dim
-    )
-    if encoded_prefix_dim > num_actor_obs or encoded_prefix_dim > num_critic_obs:
+    if self.motion_obs_dim > num_actor_obs or self.motion_obs_dim > num_critic_obs:
       raise ValueError(
-        "Configured encoded prefix is larger than actor/critic input dimensions: "
-        f"motion_obs_dim={self.motion_obs_dim}, short_io_obs_dim={self.short_io_obs_dim}, "
-        f"long_io_obs_dim={self.long_io_obs_dim}, "
-        f"actor_obs={num_actor_obs}, critic_obs={num_critic_obs}."
+        "Configured motion_obs_dim is larger than actor/critic input dimensions: "
+        f"motion_obs_dim={self.motion_obs_dim}, actor_obs={num_actor_obs}, critic_obs={num_critic_obs}."
       )
 
-    self.single_motion_obs_dim = (
-      self.motion_obs_dim // self.motion_steps if self.motion_obs_dim > 0 else 0
-    )
-    self.single_long_io_obs_dim = (
-      self.long_io_obs_dim // self.long_io_steps
-      if self.long_io_obs_dim > 0
-      else 0
-    )
+    self.single_motion_obs_dim = self.motion_obs_dim // self.motion_steps
 
     # Actor branch.
-    self.actor_motion_encoder: MotionEncoder | None = None
-    if self.motion_obs_dim > 0:
-      self.actor_motion_encoder = MotionEncoder(
-        input_dim_per_step=self.single_motion_obs_dim,
-        num_steps=self.motion_steps,
-        latent_dim=motion_latent_dim,
-        activation=activation,
-        proj_channels=motion_proj_channels,
-        conv_channels=motion_conv_channels,
-        conv_kernel_sizes=motion_conv_kernel_sizes,
-        conv_strides=motion_conv_strides,
-      )
-      if self.print_model_structure:
-        print(f"Actor Motion Encoder: {self.actor_motion_encoder}")
-
-    self.actor_long_io_encoder: MotionEncoder | None = None
-    if self.long_io_obs_dim > 0:
-      self.actor_long_io_encoder = MotionEncoder(
-        input_dim_per_step=self.single_long_io_obs_dim,
-        num_steps=self.long_io_steps,
-        latent_dim=long_io_latent_dim,
-        activation=activation,
-        proj_channels=long_io_proj_channels,
-        conv_channels=long_io_conv_channels,
-        conv_kernel_sizes=long_io_conv_kernel_sizes,
-        conv_strides=long_io_conv_strides,
-      )
-      if self.print_model_structure:
-        print(f"Actor Long IO Encoder: {self.actor_long_io_encoder}")
-
-    actor_backbone_in = (
-      num_actor_obs - self.motion_obs_dim - self.short_io_obs_dim - self.long_io_obs_dim
+    self.actor_motion_encoder = MotionEncoder(
+      input_dim_per_step=self.single_motion_obs_dim,
+      num_steps=self.motion_steps,
+      latent_dim=motion_latent_dim,
+      activation=activation,
+      channel_size=motion_channels,
     )
-    if self.motion_obs_dim > 0:
-      actor_backbone_in += self.single_motion_obs_dim + motion_latent_dim
-    if self.short_io_obs_dim > 0:
-      actor_backbone_in += self.short_io_obs_dim
-    if self.long_io_obs_dim > 0:
-      actor_backbone_in += self.single_long_io_obs_dim + long_io_latent_dim
+    print(f"Actor Motion Encoder: {self.actor_motion_encoder}")
+    actor_backbone_in = (
+      num_actor_obs
+      - self.motion_obs_dim
+      + self.single_motion_obs_dim
+      + motion_latent_dim
+    )
     actor_out_dim: int | list[int]
     if self.state_dependent_std:
       actor_out_dim = [2, num_actions]
@@ -257,56 +172,23 @@ class ClampActorCriticMimic(nn.Module):
       self.actor_obs_normalizer = EmpiricalNormalization(num_actor_obs)
     else:
       self.actor_obs_normalizer = nn.Identity()
-    if self.print_model_structure:
-      print(f"Actor MLP: {self.actor}")
+    print(f"Actor MLP: {self.actor}")
 
     # Critic branch.
-    self.critic_motion_encoder: MotionEncoder | None = None
-    if self.motion_obs_dim > 0 and not share_temporal_encoders:
-      self.critic_motion_encoder = MotionEncoder(
-        input_dim_per_step=self.single_motion_obs_dim,
-        num_steps=self.motion_steps,
-        latent_dim=motion_latent_dim,
-        activation=activation,
-        proj_channels=motion_proj_channels,
-        conv_channels=motion_conv_channels,
-        conv_kernel_sizes=motion_conv_kernel_sizes,
-        conv_strides=motion_conv_strides,
-      )
-      if self.print_model_structure:
-        print(f"Critic Motion Encoder: {self.critic_motion_encoder}")
-    elif self.motion_obs_dim > 0:
-      self.critic_motion_encoder = self.actor_motion_encoder
-
-    self.critic_long_io_encoder: MotionEncoder | None = None
-    if self.long_io_obs_dim > 0 and not share_temporal_encoders:
-      self.critic_long_io_encoder = MotionEncoder(
-        input_dim_per_step=self.single_long_io_obs_dim,
-        num_steps=self.long_io_steps,
-        latent_dim=long_io_latent_dim,
-        activation=activation,
-        proj_channels=long_io_proj_channels,
-        conv_channels=long_io_conv_channels,
-        conv_kernel_sizes=long_io_conv_kernel_sizes,
-        conv_strides=long_io_conv_strides,
-      )
-      if self.print_model_structure:
-        print(f"Critic Long IO Encoder: {self.critic_long_io_encoder}")
-    elif self.long_io_obs_dim > 0:
-      self.critic_long_io_encoder = self.actor_long_io_encoder
-
+    self.critic_motion_encoder = MotionEncoder(
+      input_dim_per_step=self.single_motion_obs_dim,
+      num_steps=self.motion_steps,
+      latent_dim=motion_latent_dim,
+      activation=activation,
+      channel_size=motion_channels,
+    )
+    print(f"Critic Motion Encoder: {self.critic_motion_encoder}")
     critic_backbone_in = (
       num_critic_obs
       - self.motion_obs_dim
-      - self.short_io_obs_dim
-      - self.long_io_obs_dim
+      + self.single_motion_obs_dim
+      + motion_latent_dim
     )
-    if self.motion_obs_dim > 0:
-      critic_backbone_in += self.single_motion_obs_dim + motion_latent_dim
-    if self.short_io_obs_dim > 0:
-      critic_backbone_in += self.short_io_obs_dim
-    if self.long_io_obs_dim > 0:
-      critic_backbone_in += self.single_long_io_obs_dim + long_io_latent_dim
     self.critic = self._build_mlp(
       input_dim=critic_backbone_in,
       output_dim=1,
@@ -337,8 +219,7 @@ class ClampActorCriticMimic(nn.Module):
         self.critic_obs_normalizer = EmpiricalNormalization(num_critic_obs)
     else:
       self.critic_obs_normalizer = nn.Identity()
-    if self.print_model_structure:
-      print(f"Critic MLP: {self.critic}")
+    print(f"Critic MLP: {self.critic}")
 
     # Action noise.
     if self.state_dependent_std:
@@ -458,64 +339,23 @@ class ClampActorCriticMimic(nn.Module):
     assert self.distribution is not None
     return self.distribution.entropy().sum(dim=-1)
 
-  def _split_encoded_prefix(
+  def _split_motion_obs(
     self, obs_flat: torch.Tensor
-  ) -> tuple[torch.Tensor | None, torch.Tensor | None, torch.Tensor | None, torch.Tensor]:
-    start = 0
-    motion_obs: torch.Tensor | None = None
-    short_io_obs: torch.Tensor | None = None
-    long_io_obs: torch.Tensor | None = None
-
-    if self.motion_obs_dim > 0:
-      motion_obs = obs_flat[:, start : start + self.motion_obs_dim]
-      start += self.motion_obs_dim
-    if self.short_io_obs_dim > 0:
-      short_io_obs = obs_flat[:, start : start + self.short_io_obs_dim]
-      start += self.short_io_obs_dim
-    if self.long_io_obs_dim > 0:
-      long_io_obs = obs_flat[:, start : start + self.long_io_obs_dim]
-      start += self.long_io_obs_dim
-    remainder = obs_flat[:, start:]
-    return motion_obs, short_io_obs, long_io_obs, remainder
+  ) -> tuple[torch.Tensor, torch.Tensor]:
+    motion_obs = obs_flat[:, : self.motion_obs_dim]
+    remainder = obs_flat[:, self.motion_obs_dim :]
+    return motion_obs, remainder
 
   def _encode_with_context(
-    self,
-    obs_flat: torch.Tensor,
-    motion_encoder: MotionEncoder | None,
-    long_io_encoder: MotionEncoder | None,
+    self, obs_flat: torch.Tensor, encoder: MotionEncoder
   ) -> torch.Tensor:
-    motion_obs, short_io_obs, long_io_obs, remainder = self._split_encoded_prefix(
-      obs_flat
-    )
-    encoded_chunks = [remainder]
-
-    if motion_obs is not None:
-      if motion_encoder is None:
-        raise RuntimeError("Motion observation is present but motion encoder is None.")
-      motion_latent = motion_encoder(motion_obs)
-      first_step_motion = motion_obs[:, : self.single_motion_obs_dim]
-      encoded_chunks.extend((first_step_motion, motion_latent))
-
-    if short_io_obs is not None:
-      encoded_chunks.append(short_io_obs)
-
-    if long_io_obs is not None:
-      if long_io_encoder is None:
-        raise RuntimeError(
-          "Long IO observation is present but long IO encoder is None."
-        )
-      long_io_latent = long_io_encoder(long_io_obs)
-      first_step_long_io = long_io_obs[:, : self.single_long_io_obs_dim]
-      encoded_chunks.extend((first_step_long_io, long_io_latent))
-
-    return torch.cat(encoded_chunks, dim=-1)
+    motion_obs, remainder = self._split_motion_obs(obs_flat)
+    motion_latent = encoder(motion_obs)
+    first_step_motion = motion_obs[:, : self.single_motion_obs_dim]
+    return torch.cat((remainder, first_step_motion, motion_latent), dim=-1)
 
   def update_distribution(self, obs_flat: torch.Tensor):
-    actor_input = self._encode_with_context(
-      obs_flat,
-      self.actor_motion_encoder,
-      self.actor_long_io_encoder,
-    )
+    actor_input = self._encode_with_context(obs_flat, self.actor_motion_encoder)
     if self.state_dependent_std:
       mean_and_std = self.actor(actor_input)
       if self.noise_std_type == "scalar":
@@ -552,22 +392,14 @@ class ClampActorCriticMimic(nn.Module):
   def act_inference(self, obs):
     actor_obs = self.get_actor_obs(obs)
     actor_obs = self.actor_obs_normalizer(actor_obs)
-    actor_input = self._encode_with_context(
-      actor_obs,
-      self.actor_motion_encoder,
-      self.actor_long_io_encoder,
-    )
+    actor_input = self._encode_with_context(actor_obs, self.actor_motion_encoder)
     return self.actor(actor_input)
 
   def evaluate(self, obs, **kwargs):
     del kwargs
     critic_obs = self.get_critic_obs(obs)
     critic_obs = self.critic_obs_normalizer(critic_obs)
-    critic_input = self._encode_with_context(
-      critic_obs,
-      self.critic_motion_encoder,
-      self.critic_long_io_encoder,
-    )
+    critic_input = self._encode_with_context(critic_obs, self.critic_motion_encoder)
     return self.critic(critic_input)
 
   def get_actor_obs(self, obs):
@@ -593,3 +425,7 @@ class ClampActorCriticMimic(nn.Module):
     if self.critic_obs_normalization:
       critic_obs = self.get_critic_obs(obs)
       self.critic_obs_normalizer.update(critic_obs)
+
+  def load_state_dict(self, state_dict, strict=True):
+    super().load_state_dict(state_dict, strict=strict)
+    return True

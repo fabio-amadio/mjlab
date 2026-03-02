@@ -1,6 +1,5 @@
 import os
 
-import numpy as np
 import rsl_rl.runners.on_policy_runner as rsl_on_policy_runner
 import wandb
 from rsl_rl.env.vec_env import VecEnv
@@ -34,12 +33,6 @@ class ClampOnPolicyRunner(MjlabOnPolicyRunner):
 
   @staticmethod
   def _infer_motion_obs_dims(env: VecEnv) -> tuple[int, int] | None:
-    """Infer flattened motion-command dim and number of future steps.
-
-    Returns:
-      `(motion_obs_dim, motion_steps)` for the `motion` command when available,
-      otherwise `None`.
-    """
     if not isinstance(env, RslRlVecEnvWrapper):
       return None
     env_unwrapped = env.unwrapped
@@ -56,87 +49,21 @@ class ClampOnPolicyRunner(MjlabOnPolicyRunner):
       motion_steps = len(step_offsets)
     return motion_obs_dim, motion_steps
 
-  @staticmethod
-  def _infer_obs_term_dims(
-    env: VecEnv, target_term_name: str
-  ) -> tuple[int, int] | None:
-    """Infer `(flattened_dim, history_steps)` for one policy observation term.
-
-    Notes:
-      - `flattened_dim` is the final dim seen by the policy for that term
-        (history already flattened if configured).
-      - `history_steps` is the configured `ObservationTermCfg.history_length`.
-    """
-    if not isinstance(env, RslRlVecEnvWrapper):
-      return None
-    obs_manager = env.unwrapped.observation_manager
-    group_terms = obs_manager.active_terms.get("policy", [])
-    group_term_dims = obs_manager.group_obs_term_dim.get("policy", [])
-    if len(group_terms) == 0 or len(group_terms) != len(group_term_dims):
-      return None
-
-    for term_name, term_dim in zip(group_terms, group_term_dims, strict=False):
-      if term_name != target_term_name:
-        continue
-      term_cfg = obs_manager.get_term_cfg("policy", term_name)
-      history_steps = max(int(term_cfg.history_length), 1)
-      obs_dim = int(np.prod(term_dim))
-      return obs_dim, history_steps
-    return None
-
-  @staticmethod
-  def _validate_encoded_prefix_order(env: VecEnv) -> None:
-    """Ensure policy-term order matches prefix slicing in `ClampActorCriticMimic`.
-
-    The policy parser assumes encoded-prefix terms are ordered as:
-    `command`, `short_io`, and optionally `long_io`.
-    """
-    if not isinstance(env, RslRlVecEnvWrapper):
-      return
-    obs_manager = env.unwrapped.observation_manager
-    group_terms = obs_manager.active_terms.get("policy", [])
-    expected_prefix = ["command", "short_io"]
-    if "long_io" in group_terms:
-      expected_prefix.append("long_io")
-    actual_prefix = group_terms[: len(expected_prefix)]
-    if actual_prefix != expected_prefix:
-      raise ValueError(
-        "Policy prefix encoding expects policy terms to start with "
-        f"{expected_prefix}, got {actual_prefix}. "
-        "Please reorder observation terms in CLAMP policy group."
-      )
-
   @classmethod
   def _configure_policy_cfg(cls, env: VecEnv, train_cfg: dict) -> None:
-    """Auto-fill CLAMP policy dimensions inferred from env observations/commands."""
     policy_cfg = train_cfg.get("policy", {})
     policy_cfg.setdefault("class_name", "ClampActorCriticMimic")
     if policy_cfg.get("class_name") != "ClampActorCriticMimic":
       train_cfg["policy"] = policy_cfg
       return
-    cls._validate_encoded_prefix_order(env)
 
     inferred_dims = cls._infer_motion_obs_dims(env)
     if inferred_dims is not None:
       motion_obs_dim, motion_steps = inferred_dims
       policy_cfg.setdefault("motion_obs_dim", motion_obs_dim)
       policy_cfg.setdefault("motion_steps", motion_steps)
-    short_io_dims = cls._infer_obs_term_dims(env, "short_io")
-    if short_io_dims is not None:
-      policy_cfg.setdefault("short_io_obs_dim", short_io_dims[0])
-
-    long_io_dims = cls._infer_obs_term_dims(env, "long_io")
-    if long_io_dims is not None:
-      long_io_obs_dim, long_io_steps = long_io_dims
-      policy_cfg.setdefault("long_io_obs_dim", long_io_obs_dim)
-      policy_cfg.setdefault("long_io_steps", long_io_steps)
-      policy_cfg.setdefault("long_io_latent_dim", 128)
-    else:
-      policy_cfg.setdefault("long_io_obs_dim", 0)
-      policy_cfg.setdefault("long_io_steps", 1)
     policy_cfg.setdefault("motion_latent_dim", 128)
-    policy_cfg.setdefault("print_model_structure", False)
-    policy_cfg.setdefault("share_temporal_encoders", False)
+    policy_cfg.setdefault("motion_channels", 20)
     policy_cfg.setdefault("layer_norm", True)
     train_cfg["policy"] = policy_cfg
 
