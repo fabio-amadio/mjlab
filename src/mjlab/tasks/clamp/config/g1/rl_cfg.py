@@ -1,6 +1,9 @@
 """RL configuration for Unitree G1 CLAMP task."""
 
 from mjlab.rl import (
+  RslRlDistillationAlgorithmCfg,
+  RslRlDistillationRunnerCfg,
+  RslRlDistillationStudentTeacherCfg,
   RslRlOnPolicyRunnerCfg,
   RslRlPpoActorCriticCfg,
   RslRlPpoAlgorithmCfg,
@@ -72,4 +75,36 @@ def unitree_g1_clamp_student_rl_ppo_runner_cfg() -> RslRlOnPolicyRunnerCfg:
     save_interval=1000,
     num_steps_per_env=24,
     max_iterations=30_000,
+  )
+
+
+def unitree_g1_clamp_student_distillation_runner_cfg() -> RslRlDistillationRunnerCfg:
+  """Create distillation runner configuration for CLAMP student distillation."""
+  return RslRlDistillationRunnerCfg(
+    seed=1,
+    policy=RslRlDistillationStudentTeacherCfg(
+      class_name="ClampStudentTeacherDistill",
+      student_obs_normalization=True,
+      teacher_obs_normalization=True,
+      student_hidden_dims=(512, 512, 256, 128),
+      activation="elu",
+      init_noise_std=0.5,
+    ),
+    algorithm=RslRlDistillationAlgorithmCfg(
+      class_name="Distillation",
+      num_learning_epochs=5,
+      gradient_length=15,
+      learning_rate=5.0e-4,
+      max_grad_norm=1.0,
+      loss_type="mse",
+      optimizer="adam",
+    ),
+    experiment_name="g1_clamp_student_distillation",
+    save_interval=1000,
+    num_steps_per_env=24,
+    max_iterations=30_000,
+    obs_groups={
+      "policy": ("policy",),
+      "teacher": ("teacher_policy",),
+    },
   )

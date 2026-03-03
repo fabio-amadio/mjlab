@@ -27,6 +27,28 @@ class RslRlPpoActorCriticCfg:
 
 
 @dataclass
+class RslRlDistillationStudentTeacherCfg:
+  """Config for the distillation StudentTeacher networks."""
+
+  class_name: str = "StudentTeacher"
+  """Ignore, required by RSL-RL."""
+  student_obs_normalization: bool = False
+  """Whether to normalize student observations."""
+  teacher_obs_normalization: bool = False
+  """Whether to normalize teacher observations."""
+  student_hidden_dims: Tuple[int, ...] = (128, 128, 128)
+  """The hidden dimensions of the student network."""
+  teacher_hidden_dims: Tuple[int, ...] = (128, 128, 128)
+  """The hidden dimensions of the teacher network."""
+  activation: str = "elu"
+  """The activation function for student and teacher networks."""
+  init_noise_std: float = 0.1
+  """Initial action noise standard deviation."""
+  noise_std_type: Literal["scalar", "log"] = "scalar"
+  """Action noise parameterization type."""
+
+
+@dataclass
 class RslRlPpoAlgorithmCfg:
   """Config for the PPO algorithm."""
 
@@ -63,6 +85,26 @@ class RslRlPpoAlgorithmCfg:
   """
   class_name: str = "PPO"
   """Ignore, required by RSL-RL."""
+
+
+@dataclass
+class RslRlDistillationAlgorithmCfg:
+  """Config for the distillation algorithm."""
+
+  class_name: str = "Distillation"
+  """Ignore, required by RSL-RL."""
+  num_learning_epochs: int = 1
+  """Number of learning epochs per update."""
+  gradient_length: int = 15
+  """Gradient accumulation horizon for recurrent training."""
+  learning_rate: float = 1e-3
+  """Optimizer learning rate."""
+  max_grad_norm: float | None = 1.0
+  """Gradient clipping norm. If None, disabled."""
+  loss_type: Literal["mse", "huber"] = "mse"
+  """Behavior cloning loss type."""
+  optimizer: Literal["adam", "adamw", "sgd", "rmsprop"] = "adam"
+  """Optimizer type."""
 
 
 @dataclass
@@ -110,3 +152,17 @@ class RslRlOnPolicyRunnerCfg(RslRlBaseRunnerCfg):
   """The policy configuration."""
   algorithm: RslRlPpoAlgorithmCfg = field(default_factory=RslRlPpoAlgorithmCfg)
   """The algorithm configuration."""
+
+
+@dataclass
+class RslRlDistillationRunnerCfg(RslRlBaseRunnerCfg):
+  class_name: str = "DistillationRunner"
+  """The runner class name for distillation."""
+  policy: RslRlDistillationStudentTeacherCfg = field(
+    default_factory=RslRlDistillationStudentTeacherCfg
+  )
+  """The student-teacher policy configuration."""
+  algorithm: RslRlDistillationAlgorithmCfg = field(
+    default_factory=RslRlDistillationAlgorithmCfg
+  )
+  """The distillation algorithm configuration."""
