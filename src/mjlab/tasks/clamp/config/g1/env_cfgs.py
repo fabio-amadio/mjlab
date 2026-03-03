@@ -12,19 +12,38 @@ from mjlab.entity import EntityArticulationInfoCfg
 from mjlab.envs import ManagerBasedRlEnvCfg
 from mjlab.envs.mdp.actions import JointPositionActionCfg
 from mjlab.sensor import ContactMatch, ContactSensorCfg
-from mjlab.tasks.clamp.clamp_env_cfg import make_clamp_env_cfg
-from mjlab.tasks.clamp.mdp import FutureJointRefAnchorMotionCommandCfg
+from mjlab.tasks.clamp.clamp_student_rl_env_cfg import make_clamp_student_rl_env_cfg
+from mjlab.tasks.clamp.clamp_teacher_env_cfg import make_clamp_teacher_env_cfg
+from mjlab.tasks.clamp.mdp import (
+  FutureJointRefAnchorMotionCommandCfg,
+  HandBaseMotionCommandCfg,
+)
 
 DEFAULT_CLAMP_MOTION_SOURCE = str(
   Path(__file__).resolve().with_name("motion_data_cfg.yaml")
 )
+G1_TRACKED_BODY_NAMES = (
+  "left_hip_roll_link",
+  "left_knee_link",
+  "left_ankle_roll_link",
+  "right_hip_roll_link",
+  "right_knee_link",
+  "right_ankle_roll_link",
+  "torso_link",
+  "left_shoulder_roll_link",
+  "left_elbow_link",
+  "left_wrist_yaw_link",
+  "right_shoulder_roll_link",
+  "right_elbow_link",
+  "right_wrist_yaw_link",
+)
 
 
-def unitree_g1_flat_clamp_teacher_env_cfg(
-  play: bool = False,
+def _apply_unitree_g1_overrides(
+  cfg: ManagerBasedRlEnvCfg,
+  play: bool,
 ) -> ManagerBasedRlEnvCfg:
-  """Create Unitree G1 CLAMP teacher configuration."""
-  cfg = make_clamp_env_cfg()
+  """Apply Unitree G1 robot/sensor/DR overrides to a CLAMP task template."""
 
   robot_cfg = get_g1_robot_cfg()
   assert robot_cfg.articulation is not None
@@ -72,25 +91,17 @@ def unitree_g1_flat_clamp_teacher_env_cfg(
   joint_pos_action.scale = G1_ACTION_SCALE
 
   motion_cmd = cfg.commands["motion"]
-  assert isinstance(motion_cmd, FutureJointRefAnchorMotionCommandCfg)
+  assert isinstance(
+    motion_cmd,
+    (FutureJointRefAnchorMotionCommandCfg, HandBaseMotionCommandCfg),
+  )
   motion_cmd.motion_file = DEFAULT_CLAMP_MOTION_SOURCE
   motion_cmd.anchor_body_name = "pelvis"
   motion_cmd.root_body_name = "pelvis"
-  motion_cmd.body_names = (
-    "left_hip_roll_link",
-    "left_knee_link",
-    "left_ankle_roll_link",
-    "right_hip_roll_link",
-    "right_knee_link",
-    "right_ankle_roll_link",
-    "torso_link",
-    "left_shoulder_roll_link",
-    "left_elbow_link",
-    "left_wrist_yaw_link",
-    "right_shoulder_roll_link",
-    "right_elbow_link",
-    "right_wrist_yaw_link",
-  )
+  motion_cmd.body_names = G1_TRACKED_BODY_NAMES
+  if isinstance(motion_cmd, HandBaseMotionCommandCfg):
+    motion_cmd.left_hand_body_name = "left_wrist_yaw_link"
+    motion_cmd.right_hand_body_name = "right_wrist_yaw_link"
   motion_cmd.sampling_mode = "adaptive"
 
   cfg.events["foot_friction"].params[
@@ -128,3 +139,17 @@ def unitree_g1_flat_clamp_teacher_env_cfg(
     motion_cmd.sampling_mode = "start"
 
   return cfg
+
+
+def unitree_g1_flat_clamp_teacher_env_cfg(
+  play: bool = False,
+) -> ManagerBasedRlEnvCfg:
+  """Create Unitree G1 CLAMP teacher configuration."""
+  return _apply_unitree_g1_overrides(make_clamp_teacher_env_cfg(), play=play)
+
+
+def unitree_g1_flat_clamp_student_rl_env_cfg(
+  play: bool = False,
+) -> ManagerBasedRlEnvCfg:
+  """Create Unitree G1 CLAMP student-RL configuration."""
+  return _apply_unitree_g1_overrides(make_clamp_student_rl_env_cfg(), play=play)

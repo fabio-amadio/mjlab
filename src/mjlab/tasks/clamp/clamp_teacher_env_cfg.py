@@ -55,7 +55,7 @@ DEFAULT_TEACHER_FUTURE_STEPS = (
 )
 
 
-def make_clamp_env_cfg() -> ManagerBasedRlEnvCfg:
+def make_clamp_teacher_env_cfg() -> ManagerBasedRlEnvCfg:
   """Create CLAMP teacher task configuration template."""
 
   ##
