@@ -88,7 +88,7 @@ def unitree_g1_clamp_student_distillation_runner_cfg() -> RslRlDistillationRunne
       teacher_obs_normalization=True,
       student_hidden_dims=(512, 512, 256, 128),
       activation="elu",
-      init_noise_std=0.5,
+      init_noise_std=0.3,
     ),
     algorithm=RslRlDistillationAlgorithmCfg(
       class_name="Distillation",
