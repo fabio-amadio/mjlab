@@ -14,7 +14,6 @@ from mjlab.tasks.clamp.clamp_teacher_env_cfg import (
   make_clamp_teacher_env_cfg,
 )
 from mjlab.tasks.clamp.mdp import HandBaseMotionCommandCfg
-from mjlab.tasks.tracking import mdp as tracking_mdp
 from mjlab.utils.noise import UniformNoiseCfg as Unoise
 
 
@@ -83,19 +82,19 @@ def make_clamp_student_rl_env_cfg() -> ManagerBasedRlEnvCfg:
   }
   privileged_terms = {
     "motion_anchor_pos_b": ObservationTermCfg(
-      func=tracking_mdp.motion_anchor_pos_b,
+      func=mdp.motion_anchor_pos_b,
       params={"command_name": "motion"},
     ),
     "motion_anchor_ori_b": ObservationTermCfg(
-      func=tracking_mdp.motion_anchor_ori_b,
+      func=mdp.motion_anchor_ori_b,
       params={"command_name": "motion"},
     ),
     "body_pos": ObservationTermCfg(
-      func=tracking_mdp.robot_body_pos_b,
+      func=mdp.robot_body_pos_b,
       params={"command_name": "motion"},
     ),
     "body_ori": ObservationTermCfg(
-      func=tracking_mdp.robot_body_ori_b,
+      func=mdp.robot_body_ori_b,
       params={"command_name": "motion"},
     ),
     "feet_contact_mask": ObservationTermCfg(
