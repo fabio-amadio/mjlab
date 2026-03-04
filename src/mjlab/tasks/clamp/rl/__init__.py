@@ -6,3 +6,6 @@ from mjlab.tasks.clamp.rl.distillation_runner import (
 )
 from mjlab.tasks.clamp.rl.policy import ClampActorCriticMimic as ClampActorCriticMimic
 from mjlab.tasks.clamp.rl.runner import ClampOnPolicyRunner as ClampOnPolicyRunner
+from mjlab.tasks.clamp.rl.student_policy import (
+  ClampStudentActorCritic as ClampStudentActorCritic,
+)

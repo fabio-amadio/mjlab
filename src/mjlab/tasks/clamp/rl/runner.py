@@ -12,6 +12,7 @@ from mjlab.tasks.clamp.rl.exporter import (
   export_motion_policy_as_onnx,
 )
 from mjlab.tasks.clamp.rl.policy import ClampActorCriticMimic
+from mjlab.tasks.clamp.rl.student_policy import ClampStudentActorCritic
 
 
 class ClampOnPolicyRunner(MjlabOnPolicyRunner):
@@ -28,6 +29,7 @@ class ClampOnPolicyRunner(MjlabOnPolicyRunner):
     self._configure_policy_cfg(env, train_cfg)
     # Register the CLAMP policy in RSL-RL runner scope so class_name eval resolves.
     rsl_on_policy_runner.ClampActorCriticMimic = ClampActorCriticMimic
+    rsl_on_policy_runner.ClampStudentActorCritic = ClampStudentActorCritic
     super().__init__(env, train_cfg, log_dir, device)
     self.registry_name = registry_name
 

@@ -1,44 +1,44 @@
 root_path: ../../../../../../assets/motions/clamp/g1_motions_npz
 subfolders:
-  - name: accad
-    weight: 1.0
-  - name: bmlhandball
-    weight: 1.0
-  - name: bmlmovi
-    weight: 1.0
-  - name: cmu
-    weight: 1.0
-  - name: cnrs
-    weight: 1.0
-  - name: dancedb
-    weight: 1.0
-  - name: dfaust
-    weight: 1.0
-  - name: ekut
-    weight: 1.0
-  - name: eyes_japan
-    weight: 1.0
-  - name: grab
-    weight: 1.0
+  # - name: accad
+  #   weight: 1.0
+  # - name: bmlhandball
+  #   weight: 1.0
+  # - name: bmlmovi
+  #   weight: 1.0
+  # - name: cmu
+  #   weight: 1.0
+  # - name: cnrs
+  #   weight: 1.0
+  # - name: dancedb
+  #   weight: 1.0
+  # - name: dfaust
+  #   weight: 1.0
+  # - name: ekut
+  #   weight: 1.0
+  # - name: eyes_japan
+  #   weight: 1.0
+  # - name: grab
+  #   weight: 1.0
   - name: hdm05
     weight: 1.0
   - name: human4d
     weight: 1.0
-  - name: humaneva
-    weight: 1.0
-  - name: kit
-    weight: 1.0
-  - name: mpi_limits
-    weight: 1.0
-  - name: mpi_mosh
-    weight: 1.0
-  - name: omomo
-    weight: 1.0
-  - name: sfu
-    weight: 1.0
-  - name: totalcapture
-    weight: 1.0
-  - name: transitions
-    weight: 1.0
-  - name: mocap
-    weight: 1.0
+  # - name: humaneva
+  #   weight: 1.0
+  # - name: kit
+  #   weight: 1.0
+  # - name: mpi_limits
+  #   weight: 1.0
+  # - name: mpi_mosh
+  #   weight: 1.0
+  # - name: omomo
+  #   weight: 1.0
+  # - name: sfu
+  #   weight: 1.0
+  # - name: totalcapture
+  #   weight: 1.0
+  # - name: transitions
+  #   weight: 1.0
+  # - name: mocap
+  #   weight: 1.0

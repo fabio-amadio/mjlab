@@ -122,6 +122,12 @@ def _apply_unitree_g1_overrides(
     "right_wrist_yaw_link",
   )
 
+  if "foot_slip" in cfg.rewards:
+    cfg.rewards["foot_slip"].params["asset_cfg"].site_names = (
+      "left_foot",
+      "right_foot",
+    )
+
   cfg.terminations["ee_body_pos"].params["body_names"] = (
     "left_ankle_roll_link",
     "right_ankle_roll_link",

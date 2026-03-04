@@ -6,6 +6,8 @@ Robot-specific values are applied in config/<robot>/env_cfgs.py.
 
 from mjlab.envs import ManagerBasedRlEnvCfg
 from mjlab.managers.observation_manager import ObservationGroupCfg, ObservationTermCfg
+from mjlab.managers.reward_manager import RewardTermCfg
+from mjlab.managers.scene_entity_config import SceneEntityCfg
 from mjlab.tasks.clamp import mdp
 from mjlab.tasks.clamp.clamp_teacher_env_cfg import (
   VELOCITY_RANGE,
@@ -14,6 +16,34 @@ from mjlab.tasks.clamp.clamp_teacher_env_cfg import (
 from mjlab.tasks.clamp.mdp import HandBaseMotionCommandCfg
 from mjlab.tasks.tracking import mdp as tracking_mdp
 from mjlab.utils.noise import UniformNoiseCfg as Unoise
+
+
+def student_motion_command_kwargs() -> dict[str, object]:
+  """Common kwargs shared by student command configurations."""
+  return {
+    "entity_name": "robot",
+    "resampling_time_range": (1.0e9, 1.0e9),
+    "debug_vis": True,
+    "show_ghost": True,
+    "pose_range": {
+      "x": (-0.05, 0.05),
+      "y": (-0.05, 0.05),
+      "z": (-0.01, 0.01),
+      "roll": (-0.1, 0.1),
+      "pitch": (-0.1, 0.1),
+      "yaw": (-0.2, 0.2),
+    },
+    "velocity_range": VELOCITY_RANGE,
+    "joint_position_range": (-0.1, 0.1),
+    # Set in robot cfg.
+    "motion_file": "",
+    "anchor_body_name": "",
+    "body_names": (),
+    "root_body_name": "",
+    "left_hand_body_name": "",
+    "right_hand_body_name": "",
+    "sampling_mode": "adaptive",
+  }
 
 
 def make_clamp_student_rl_env_cfg() -> ManagerBasedRlEnvCfg:
@@ -88,28 +118,59 @@ def make_clamp_student_rl_env_cfg() -> ManagerBasedRlEnvCfg:
     ),
   }
 
-  cfg.commands["motion"] = HandBaseMotionCommandCfg(
-    entity_name="robot",
-    resampling_time_range=(1.0e9, 1.0e9),
-    debug_vis=True,
-    pose_range={
-      "x": (-0.05, 0.05),
-      "y": (-0.05, 0.05),
-      "z": (-0.01, 0.01),
-      "roll": (-0.1, 0.1),
-      "pitch": (-0.1, 0.1),
-      "yaw": (-0.2, 0.2),
-    },
-    velocity_range=VELOCITY_RANGE,
-    joint_position_range=(-0.1, 0.1),
-    # Set in robot cfg.
-    motion_file="",
-    anchor_body_name="",
-    body_names=(),
-    root_body_name="",
-    left_hand_body_name="",
-    right_hand_body_name="",
-    sampling_mode="adaptive",
-  )
+  cfg.commands["motion"] = HandBaseMotionCommandCfg(**student_motion_command_kwargs())
+
+  cfg.rewards = {
+    "hand_pos": RewardTermCfg(
+      func=mdp.hand_position_tracking_exp,
+      weight=3.0,
+      params={"command_name": "motion", "std": 0.15},
+    ),
+    "hand_ori": RewardTermCfg(
+      func=mdp.hand_orientation_tracking_exp,
+      weight=2.0,
+      params={"command_name": "motion", "std": 0.6},
+    ),
+    "base_lin_vel": RewardTermCfg(
+      func=mdp.track_base_linear_velocity_exp,
+      weight=1.2,
+      params={"command_name": "motion", "std": 0.4},
+    ),
+    "base_ang_vel": RewardTermCfg(
+      func=mdp.track_base_angular_velocity_exp,
+      weight=0.8,
+      params={"command_name": "motion", "std": 0.5},
+    ),
+    "action_rate_l2": RewardTermCfg(func=mdp.action_rate_l2, weight=-0.03),
+    "joint_limit": RewardTermCfg(
+      func=mdp.joint_pos_limits,
+      weight=-5.0,
+      params={"asset_cfg": SceneEntityCfg("robot", joint_names=(".*",))},
+    ),
+    "self_collisions": RewardTermCfg(
+      func=mdp.self_collision_cost,
+      weight=-3.0,
+      params={"sensor_name": "self_collision"},
+    ),
+    "foot_slip": RewardTermCfg(
+      func=mdp.feet_slip_hand_base,
+      weight=-0.03,
+      params={
+        "sensor_name": "feet_ground_contact",
+        "command_name": "motion",
+        "command_threshold": 0.05,
+        "asset_cfg": SceneEntityCfg("robot", site_names=()),  # Set per-robot.
+      },
+    ),
+    "soft_landing": RewardTermCfg(
+      func=mdp.soft_landing_hand_base,
+      weight=-5e-6,
+      params={
+        "sensor_name": "feet_ground_contact",
+        "command_name": "motion",
+        "command_threshold": 0.05,
+      },
+    ),
+  }
 
   return cfg
