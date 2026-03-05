@@ -40,5 +40,3 @@ subfolders:
     weight: 1.0
   - name: transitions
     weight: 1.0
-  - name: mocap
-    weight: 1.0
