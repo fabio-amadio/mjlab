@@ -22,7 +22,7 @@ from mjlab.terrains import TerrainImporterCfg
 from mjlab.utils.noise import UniformNoiseCfg as Unoise
 from mjlab.viewer import ViewerConfig
 
-VELOCITY_RANGE = {
+PUSH_VELOCITY_RANGE = {
   "x": (-0.5, 0.5),
   "y": (-0.5, 0.5),
   "z": (-0.2, 0.2),
@@ -164,7 +164,7 @@ def make_clamp_teacher_env_cfg() -> ManagerBasedRlEnvCfg:
         "pitch": (-0.1, 0.1),
         "yaw": (-0.2, 0.2),
       },
-      velocity_range=VELOCITY_RANGE,
+      velocity_range=PUSH_VELOCITY_RANGE,
       joint_position_range=(-0.1, 0.1),
       # Set in robot cfg.
       motion_file="",
@@ -185,7 +185,7 @@ def make_clamp_teacher_env_cfg() -> ManagerBasedRlEnvCfg:
       func=mdp.push_by_setting_velocity,
       mode="interval",
       interval_range_s=(1.0, 3.0),
-      params={"velocity_range": VELOCITY_RANGE},
+      params={"velocity_range": PUSH_VELOCITY_RANGE},
     ),
     "push_end_effector": EventTermCfg(
       func=mdp.apply_external_force_torque,

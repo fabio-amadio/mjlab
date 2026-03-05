@@ -10,7 +10,7 @@ from mjlab.managers.reward_manager import RewardTermCfg
 from mjlab.managers.scene_entity_config import SceneEntityCfg
 from mjlab.tasks.clamp import mdp
 from mjlab.tasks.clamp.clamp_teacher_env_cfg import (
-  VELOCITY_RANGE,
+  PUSH_VELOCITY_RANGE,
   make_clamp_teacher_env_cfg,
 )
 from mjlab.tasks.clamp.mdp import HandBaseMotionCommandCfg
@@ -32,7 +32,7 @@ def student_motion_command_kwargs() -> dict[str, object]:
       "pitch": (-0.1, 0.1),
       "yaw": (-0.2, 0.2),
     },
-    "velocity_range": VELOCITY_RANGE,
+    "velocity_range": PUSH_VELOCITY_RANGE,
     "joint_position_range": (-0.1, 0.1),
     # Set in robot cfg.
     "motion_file": "",
