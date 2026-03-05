@@ -222,6 +222,76 @@ class HandBaseMotionCommand(MotionCommand):
       ) from exc
 
     self._command_cache: torch.Tensor | None = None
+    self._init_student_metrics()
+
+  def _init_student_metrics(self) -> None:
+    self.metrics["student_hand_pos_error"] = torch.zeros(
+      self.num_envs, device=self.device
+    )
+    self.metrics["student_hand_ori_error"] = torch.zeros(
+      self.num_envs, device=self.device
+    )
+    self.metrics["student_base_lin_vel_error"] = torch.zeros(
+      self.num_envs, device=self.device
+    )
+    self.metrics["student_base_ang_vel_error"] = torch.zeros(
+      self.num_envs, device=self.device
+    )
+
+  def _update_student_metrics(self) -> None:
+    student_cmd = self.command
+    desired_hand_pos_b = student_cmd[:, :6].reshape(self.num_envs, 2, 3)
+    desired_hand_rot6d_b = student_cmd[:, 6:18].reshape(self.num_envs, 2, 6)
+    desired_lin_vel_xy_b = student_cmd[:, 18:20]
+    desired_ang_vel_z_b = student_cmd[:, 20]
+
+    left_robot_idx = int(self.robot_body_indexes[self.left_hand_body_index].item())
+    right_robot_idx = int(self.robot_body_indexes[self.right_hand_body_index].item())
+
+    hand_pos_w = torch.stack(
+      [
+        self.robot.data.body_link_pos_w[:, left_robot_idx],
+        self.robot.data.body_link_pos_w[:, right_robot_idx],
+      ],
+      dim=1,
+    )
+    hand_quat_w = torch.stack(
+      [
+        self.robot.data.body_link_quat_w[:, left_robot_idx],
+        self.robot.data.body_link_quat_w[:, right_robot_idx],
+      ],
+      dim=1,
+    )
+
+    anchor_pos_w = self.robot_anchor_pos_w[:, None, :].expand(-1, 2, -1)
+    anchor_quat_w = self.robot_anchor_quat_w[:, None, :].expand(-1, 2, -1)
+    hand_pos_b, hand_quat_b = subtract_frame_transforms(
+      anchor_pos_w,
+      anchor_quat_w,
+      hand_pos_w,
+      hand_quat_w,
+    )
+    hand_rot6d_b = _rot6d_from_matrix(matrix_from_quat(hand_quat_b))
+
+    actual_lin_vel_b = quat_apply_inverse(
+      self.robot_anchor_quat_w, self.robot_anchor_lin_vel_w
+    )
+    actual_ang_vel_b = quat_apply_inverse(
+      self.robot_anchor_quat_w, self.robot_anchor_ang_vel_w
+    )
+
+    self.metrics["student_hand_pos_error"] = torch.norm(
+      desired_hand_pos_b - hand_pos_b, dim=-1
+    ).mean(dim=-1)
+    self.metrics["student_hand_ori_error"] = torch.norm(
+      desired_hand_rot6d_b - hand_rot6d_b, dim=-1
+    ).mean(dim=-1)
+    self.metrics["student_base_lin_vel_error"] = torch.norm(
+      desired_lin_vel_xy_b - actual_lin_vel_b[:, :2], dim=-1
+    )
+    self.metrics["student_base_ang_vel_error"] = torch.abs(
+      desired_ang_vel_z_b - actual_ang_vel_b[:, 2]
+    )
 
   def _build_command(self) -> torch.Tensor:
     # Current desired reference frame (single step).
@@ -290,6 +360,10 @@ class HandBaseMotionCommand(MotionCommand):
     super()._update_command()
     self._refresh_command_cache()
 
+  def _update_metrics(self):
+    super()._update_metrics()
+    self._update_student_metrics()
+
   def _debug_vis_impl(self, visualizer: DebugVisualizer) -> None:
     _debug_vis_hand_base_command(self, visualizer)
 
@@ -316,6 +390,76 @@ class TeacherStudentMotionCommand(MotionCommand):
 
     self._student_command_cache: torch.Tensor | None = None
     self._teacher_command_cache: torch.Tensor | None = None
+    self._init_student_metrics()
+
+  def _init_student_metrics(self) -> None:
+    self.metrics["student_hand_pos_error"] = torch.zeros(
+      self.num_envs, device=self.device
+    )
+    self.metrics["student_hand_ori_error"] = torch.zeros(
+      self.num_envs, device=self.device
+    )
+    self.metrics["student_base_lin_vel_error"] = torch.zeros(
+      self.num_envs, device=self.device
+    )
+    self.metrics["student_base_ang_vel_error"] = torch.zeros(
+      self.num_envs, device=self.device
+    )
+
+  def _update_student_metrics(self) -> None:
+    student_cmd = self.student_command
+    desired_hand_pos_b = student_cmd[:, :6].reshape(self.num_envs, 2, 3)
+    desired_hand_rot6d_b = student_cmd[:, 6:18].reshape(self.num_envs, 2, 6)
+    desired_lin_vel_xy_b = student_cmd[:, 18:20]
+    desired_ang_vel_z_b = student_cmd[:, 20]
+
+    left_robot_idx = int(self.robot_body_indexes[self.left_hand_body_index].item())
+    right_robot_idx = int(self.robot_body_indexes[self.right_hand_body_index].item())
+
+    hand_pos_w = torch.stack(
+      [
+        self.robot.data.body_link_pos_w[:, left_robot_idx],
+        self.robot.data.body_link_pos_w[:, right_robot_idx],
+      ],
+      dim=1,
+    )
+    hand_quat_w = torch.stack(
+      [
+        self.robot.data.body_link_quat_w[:, left_robot_idx],
+        self.robot.data.body_link_quat_w[:, right_robot_idx],
+      ],
+      dim=1,
+    )
+
+    anchor_pos_w = self.robot_anchor_pos_w[:, None, :].expand(-1, 2, -1)
+    anchor_quat_w = self.robot_anchor_quat_w[:, None, :].expand(-1, 2, -1)
+    hand_pos_b, hand_quat_b = subtract_frame_transforms(
+      anchor_pos_w,
+      anchor_quat_w,
+      hand_pos_w,
+      hand_quat_w,
+    )
+    hand_rot6d_b = _rot6d_from_matrix(matrix_from_quat(hand_quat_b))
+
+    actual_lin_vel_b = quat_apply_inverse(
+      self.robot_anchor_quat_w, self.robot_anchor_lin_vel_w
+    )
+    actual_ang_vel_b = quat_apply_inverse(
+      self.robot_anchor_quat_w, self.robot_anchor_ang_vel_w
+    )
+
+    self.metrics["student_hand_pos_error"] = torch.norm(
+      desired_hand_pos_b - hand_pos_b, dim=-1
+    ).mean(dim=-1)
+    self.metrics["student_hand_ori_error"] = torch.norm(
+      desired_hand_rot6d_b - hand_rot6d_b, dim=-1
+    ).mean(dim=-1)
+    self.metrics["student_base_lin_vel_error"] = torch.norm(
+      desired_lin_vel_xy_b - actual_lin_vel_b[:, :2], dim=-1
+    )
+    self.metrics["student_base_ang_vel_error"] = torch.abs(
+      desired_ang_vel_z_b - actual_ang_vel_b[:, 2]
+    )
 
   def _build_student_command(self) -> torch.Tensor:
     frames = self.query_motion_frames((0,))
@@ -416,6 +560,10 @@ class TeacherStudentMotionCommand(MotionCommand):
   def _update_command(self):
     super()._update_command()
     self._refresh_command_cache()
+
+  def _update_metrics(self):
+    super()._update_metrics()
+    self._update_student_metrics()
 
   def _debug_vis_impl(self, visualizer: DebugVisualizer) -> None:
     _debug_vis_hand_base_command(self, visualizer)

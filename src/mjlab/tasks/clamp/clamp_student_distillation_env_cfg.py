@@ -4,6 +4,8 @@ This module defines the task-level CLAMP student-distillation configuration.
 Robot-specific values are applied in config/<robot>/env_cfgs.py.
 """
 
+from copy import deepcopy
+
 from mjlab.envs import ManagerBasedRlEnvCfg
 from mjlab.managers.observation_manager import ObservationGroupCfg, ObservationTermCfg
 from mjlab.tasks.clamp import mdp
@@ -11,7 +13,10 @@ from mjlab.tasks.clamp.clamp_student_rl_env_cfg import (
   make_clamp_student_rl_env_cfg,
   student_motion_command_kwargs,
 )
-from mjlab.tasks.clamp.clamp_teacher_env_cfg import DEFAULT_TEACHER_FUTURE_STEPS
+from mjlab.tasks.clamp.clamp_teacher_env_cfg import (
+  DEFAULT_TEACHER_FUTURE_STEPS,
+  make_clamp_teacher_env_cfg,
+)
 from mjlab.tasks.clamp.mdp import TeacherStudentMotionCommandCfg
 
 
@@ -46,5 +51,7 @@ def make_clamp_student_distillation_env_cfg() -> ManagerBasedRlEnvCfg:
     **student_motion_command_kwargs(),
     command_step_offsets=DEFAULT_TEACHER_FUTURE_STEPS,
   )
+  # Keep reward naming/weights identical to teacher for direct W&B comparison.
+  cfg.rewards = deepcopy(make_clamp_teacher_env_cfg().rewards)
 
   return cfg
