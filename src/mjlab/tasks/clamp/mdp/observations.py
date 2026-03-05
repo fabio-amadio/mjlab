@@ -5,10 +5,10 @@ from typing import TYPE_CHECKING, cast
 import torch
 
 from mjlab.sensor import ContactSensor
-from mjlab.tasks.clamp.mdp.student_commands import TeacherStudentMotionCommand
 from mjlab.utils.lab_api.math import matrix_from_quat, subtract_frame_transforms
 
 from .motion_command import MotionCommand
+from .motion_command_dual_view import DualViewMotionCommand
 
 if TYPE_CHECKING:
   from mjlab.envs import ManagerBasedRlEnv
@@ -79,7 +79,7 @@ def feet_contact_mask(env: ManagerBasedRlEnv, sensor_name: str) -> torch.Tensor:
 
 def motion_student_command(env: ManagerBasedRlEnv, command_name: str) -> torch.Tensor:
   command = env.command_manager.get_term(command_name)
-  if isinstance(command, TeacherStudentMotionCommand):
+  if isinstance(command, DualViewMotionCommand):
     return command.student_command
   fallback = env.command_manager.get_command(command_name)
   assert fallback is not None
@@ -88,7 +88,7 @@ def motion_student_command(env: ManagerBasedRlEnv, command_name: str) -> torch.T
 
 def motion_teacher_command(env: ManagerBasedRlEnv, command_name: str) -> torch.Tensor:
   command = env.command_manager.get_term(command_name)
-  if isinstance(command, TeacherStudentMotionCommand):
+  if isinstance(command, DualViewMotionCommand):
     return command.teacher_command
   fallback = env.command_manager.get_command(command_name)
   assert fallback is not None

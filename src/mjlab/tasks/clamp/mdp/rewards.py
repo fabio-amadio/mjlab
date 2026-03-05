@@ -13,11 +13,8 @@ from mjlab.utils.lab_api.math import (
   subtract_frame_transforms,
 )
 
-from .student_commands import (
-  HandBaseMotionCommand,
-  TeacherStudentMotionCommand,
-  _rot6d_from_matrix,
-)
+from .motion_command_dual_view import DualViewMotionCommand
+from .motion_command_hand_base import HandBaseMotionCommand, _rot6d_from_matrix
 
 if TYPE_CHECKING:
   from mjlab.envs import ManagerBasedRlEnv
@@ -27,9 +24,9 @@ _DEFAULT_ASSET_CFG = SceneEntityCfg("robot")
 
 def _student_command_term(
   env: ManagerBasedRlEnv, command_name: str
-) -> HandBaseMotionCommand | TeacherStudentMotionCommand:
+) -> HandBaseMotionCommand | DualViewMotionCommand:
   command = env.command_manager.get_term(command_name)
-  if isinstance(command, (HandBaseMotionCommand, TeacherStudentMotionCommand)):
+  if isinstance(command, (HandBaseMotionCommand, DualViewMotionCommand)):
     return command
   raise TypeError(
     f"Command '{command_name}' is not a student hand-base command term. "
@@ -39,7 +36,7 @@ def _student_command_term(
 
 def _student_command_tensor(env: ManagerBasedRlEnv, command_name: str) -> torch.Tensor:
   command_term = env.command_manager.get_term(command_name)
-  if isinstance(command_term, TeacherStudentMotionCommand):
+  if isinstance(command_term, DualViewMotionCommand):
     return command_term.student_command
   command = env.command_manager.get_command(command_name)
   assert command is not None, f"Command '{command_name}' not found."
@@ -47,7 +44,7 @@ def _student_command_tensor(env: ManagerBasedRlEnv, command_name: str) -> torch.
 
 
 def _current_hand_pose_in_anchor_frame(
-  command: HandBaseMotionCommand | TeacherStudentMotionCommand,
+  command: HandBaseMotionCommand | DualViewMotionCommand,
 ) -> tuple[torch.Tensor, torch.Tensor]:
   left_idx = command.left_hand_body_index
   right_idx = command.right_hand_body_index

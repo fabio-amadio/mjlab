@@ -17,7 +17,7 @@ from mjlab.tasks.clamp.clamp_teacher_env_cfg import (
   DEFAULT_TEACHER_FUTURE_STEPS,
   make_clamp_teacher_env_cfg,
 )
-from mjlab.tasks.clamp.mdp import TeacherStudentMotionCommandCfg
+from mjlab.tasks.clamp.mdp import DualViewMotionCommandCfg
 
 
 def make_clamp_student_distillation_env_cfg() -> ManagerBasedRlEnvCfg:
@@ -47,7 +47,7 @@ def make_clamp_student_distillation_env_cfg() -> ManagerBasedRlEnvCfg:
     enable_corruption=False,
   )
 
-  cfg.commands["motion"] = TeacherStudentMotionCommandCfg(
+  cfg.commands["motion"] = DualViewMotionCommandCfg(
     **student_motion_command_kwargs(),
     command_step_offsets=DEFAULT_TEACHER_FUTURE_STEPS,
   )

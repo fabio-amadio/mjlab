@@ -18,9 +18,9 @@ from mjlab.tasks.clamp.clamp_student_distillation_env_cfg import (
 from mjlab.tasks.clamp.clamp_student_rl_env_cfg import make_clamp_student_rl_env_cfg
 from mjlab.tasks.clamp.clamp_teacher_env_cfg import make_clamp_teacher_env_cfg
 from mjlab.tasks.clamp.mdp import (
+  DualViewMotionCommandCfg,
   FutureJointRefAnchorMotionCommandCfg,
   HandBaseMotionCommandCfg,
-  TeacherStudentMotionCommandCfg,
 )
 
 DEFAULT_CLAMP_MOTION_SOURCE = str(
@@ -100,14 +100,14 @@ def _apply_unitree_g1_overrides(
     (
       FutureJointRefAnchorMotionCommandCfg,
       HandBaseMotionCommandCfg,
-      TeacherStudentMotionCommandCfg,
+      DualViewMotionCommandCfg,
     ),
   )
   motion_cmd.motion_file = DEFAULT_CLAMP_MOTION_SOURCE
   motion_cmd.anchor_body_name = "pelvis"
   motion_cmd.root_body_name = "pelvis"
   motion_cmd.body_names = G1_TRACKED_BODY_NAMES
-  if isinstance(motion_cmd, (HandBaseMotionCommandCfg, TeacherStudentMotionCommandCfg)):
+  if isinstance(motion_cmd, (HandBaseMotionCommandCfg, DualViewMotionCommandCfg)):
     motion_cmd.left_hand_body_name = "left_wrist_yaw_link"
     motion_cmd.right_hand_body_name = "right_wrist_yaw_link"
     motion_cmd.viz_z_offset = 1.15

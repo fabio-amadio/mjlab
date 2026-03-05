@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from functools import reduce
-from typing import Any, Mapping, Sequence
+from typing import Mapping, Sequence
 
 import torch
 import torch.nn as nn
