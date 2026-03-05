@@ -104,8 +104,8 @@ def _debug_vis_hand_base_command(command, visualizer: DebugVisualizer) -> None:
   )
 
   hand_names = ("left_hand", "right_hand")
-  arrow_scale = 0.5
-  z_offset = 0.2
+  arrow_scale = float(getattr(command.cfg, "viz_scale", 0.5))
+  z_offset = float(getattr(command.cfg, "viz_z_offset", 0.2))
 
   for batch in env_indices:
     if show_ghost:
@@ -428,6 +428,8 @@ class HandBaseMotionCommandCfg(MotionCommandCfg):
   left_hand_body_name: str = ""
   right_hand_body_name: str = ""
   show_ghost: bool = True
+  viz_scale: float = 0.5
+  viz_z_offset: float = 0.2
 
   def build(self, env: ManagerBasedRlEnv) -> MotionCommand:
     if self.left_hand_body_name == "" or self.right_hand_body_name == "":
@@ -445,6 +447,8 @@ class TeacherStudentMotionCommandCfg(MotionCommandCfg):
   right_hand_body_name: str = ""
   command_step_offsets: tuple[int, ...] = ()
   show_ghost: bool = True
+  viz_scale: float = 0.5
+  viz_z_offset: float = 0.2
 
   def build(self, env: ManagerBasedRlEnv) -> MotionCommand:
     if self.left_hand_body_name == "" or self.right_hand_body_name == "":

@@ -110,6 +110,7 @@ def _apply_unitree_g1_overrides(
   if isinstance(motion_cmd, (HandBaseMotionCommandCfg, TeacherStudentMotionCommandCfg)):
     motion_cmd.left_hand_body_name = "left_wrist_yaw_link"
     motion_cmd.right_hand_body_name = "right_wrist_yaw_link"
+    motion_cmd.viz_z_offset = 1.15
   motion_cmd.sampling_mode = "adaptive"
 
   cfg.events["foot_friction"].params[
