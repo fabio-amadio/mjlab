@@ -4,6 +4,8 @@ This module defines the task-level CLAMP student-RL configuration.
 Robot-specific values are applied in config/<robot>/env_cfgs.py.
 """
 
+from copy import deepcopy
+
 from mjlab.envs import ManagerBasedRlEnvCfg
 from mjlab.managers.observation_manager import ObservationGroupCfg, ObservationTermCfg
 from mjlab.managers.reward_manager import RewardTermCfg
@@ -119,41 +121,31 @@ def make_clamp_student_rl_env_cfg() -> ManagerBasedRlEnvCfg:
 
   cfg.commands["motion"] = HandBaseMotionCommandCfg(**student_motion_command_kwargs())
 
-  cfg.rewards = {
+  # Keep full teacher reward set, then add student-focused terms for hands/base commands.
+  student_tracking_rewards = {
     "hand_pos": RewardTermCfg(
       func=mdp.hand_position_tracking_exp,
-      weight=3.0,
-      params={"command_name": "motion", "std": 0.15},
+      weight=1.0,
+      params={"command_name": "motion", "std": 0.3},
     ),
     "hand_ori": RewardTermCfg(
       func=mdp.hand_orientation_tracking_exp,
-      weight=2.0,
-      params={"command_name": "motion", "std": 0.6},
+      weight=1.0,
+      params={"command_name": "motion", "std": 0.4},
     ),
     "base_lin_vel": RewardTermCfg(
       func=mdp.track_base_linear_velocity_exp,
-      weight=1.2,
-      params={"command_name": "motion", "std": 0.4},
+      weight=1.0,
+      params={"command_name": "motion", "std": 0.5},
     ),
     "base_ang_vel": RewardTermCfg(
       func=mdp.track_base_angular_velocity_exp,
-      weight=0.8,
-      params={"command_name": "motion", "std": 0.5},
-    ),
-    "action_rate_l2": RewardTermCfg(func=mdp.action_rate_l2, weight=-0.03),
-    "joint_limit": RewardTermCfg(
-      func=mdp.joint_pos_limits,
-      weight=-5.0,
-      params={"asset_cfg": SceneEntityCfg("robot", joint_names=(".*",))},
-    ),
-    "self_collisions": RewardTermCfg(
-      func=mdp.self_collision_cost,
-      weight=-3.0,
-      params={"sensor_name": "self_collision"},
+      weight=1.0,
+      params={"command_name": "motion", "std": 0.7},
     ),
     "foot_slip": RewardTermCfg(
       func=mdp.feet_slip_hand_base,
-      weight=-0.03,
+      weight=-0.05,
       params={
         "sensor_name": "feet_ground_contact",
         "command_name": "motion",
@@ -163,7 +155,7 @@ def make_clamp_student_rl_env_cfg() -> ManagerBasedRlEnvCfg:
     ),
     "soft_landing": RewardTermCfg(
       func=mdp.soft_landing_hand_base,
-      weight=-5e-6,
+      weight=-1e-5,
       params={
         "sensor_name": "feet_ground_contact",
         "command_name": "motion",
@@ -171,5 +163,7 @@ def make_clamp_student_rl_env_cfg() -> ManagerBasedRlEnvCfg:
       },
     ),
   }
+  cfg.rewards = deepcopy(make_clamp_teacher_env_cfg().rewards)
+  cfg.rewards.update(student_tracking_rewards)
 
   return cfg
