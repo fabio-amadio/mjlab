@@ -1,6 +1,8 @@
+import copy
 import os
 from typing import cast
 
+import torch.nn as nn
 import torch
 
 from mjlab.envs import ManagerBasedRlEnv
@@ -9,74 +11,101 @@ from mjlab.rl.exporter_utils import (
   get_base_metadata,
 )
 from mjlab.tasks.clamp.mdp import MotionCommand
-from mjlab.utils.lab_api.rl.exporter import _OnnxPolicyExporter
+from mjlab.tasks.clamp.rl.distillation_policy import ClampStudentTeacherDistill
+from mjlab.tasks.clamp.rl.policy import ClampActorCriticMimic, MotionEncoder
+from mjlab.tasks.clamp.rl.student_policy import ClampStudentActorCritic
 
 
-def export_motion_policy_as_onnx(
+def export_clamp_policy_as_onnx(
   env: ManagerBasedRlEnv,
-  actor_critic: object,
+  policy: object,
   path: str,
-  normalizer: object | None = None,
   filename="policy.onnx",
   verbose=False,
 ):
   if not os.path.exists(path):
     os.makedirs(path, exist_ok=True)
-  policy_exporter = _OnnxMotionPolicyExporter(env, actor_critic, normalizer, verbose)
-  policy_exporter.export(path, filename)
+  policy_obs_dim = _infer_policy_obs_dim(env)
+  policy_exporter = _OnnxClampInferenceExporter(policy, verbose=verbose)
+  policy_exporter.export(path, filename, policy_obs_dim)
 
 
-class _OnnxMotionPolicyExporter(_OnnxPolicyExporter):
-  def __init__(
-    self, env: ManagerBasedRlEnv, actor_critic, normalizer=None, verbose=False
-  ):
-    super().__init__(actor_critic, normalizer, verbose)
-    cmd = cast(MotionCommand, env.command_manager.get_term("motion"))
-    motion_body_indexes = cmd.motion_body_indexes
+def _flatten_obs_dim(dim: int | tuple[int, ...]) -> int:
+  if isinstance(dim, int):
+    return int(dim)
+  out = 1
+  for d in dim:
+    out *= int(d)
+  return out
 
-    self.joint_pos = cmd.motion.joint_pos.to("cpu")
-    self.joint_vel = cmd.motion.joint_vel.to("cpu")
-    self.body_pos_w = cmd.motion.body_pos_w[:, motion_body_indexes].to("cpu")
-    self.body_quat_w = cmd.motion.body_quat_w[:, motion_body_indexes].to("cpu")
-    self.body_lin_vel_w = cmd.motion.body_lin_vel_w[:, motion_body_indexes].to("cpu")
-    self.body_ang_vel_w = cmd.motion.body_ang_vel_w[:, motion_body_indexes].to("cpu")
-    self.time_step_total: int = self.joint_pos.shape[0]
 
-  def forward(self, x, time_step):  # type: ignore[invalid-method-override]
-    time_step_clamped = torch.clamp(
-      time_step.long().squeeze(-1), max=self.time_step_total - 1
-    )
-    return (
-      self.actor(self.normalizer(x)),
-      self.joint_pos[time_step_clamped],
-      self.joint_vel[time_step_clamped],
-      self.body_pos_w[time_step_clamped],
-      self.body_quat_w[time_step_clamped],
-      self.body_lin_vel_w[time_step_clamped],
-      self.body_ang_vel_w[time_step_clamped],
-    )
+def _infer_policy_obs_dim(env: ManagerBasedRlEnv) -> int:
+  group_dim = env.observation_manager.group_obs_dim["policy"]
+  if isinstance(group_dim, list):
+    return int(sum(_flatten_obs_dim(dim) for dim in group_dim))
+  return int(_flatten_obs_dim(group_dim))
 
-  def export(self, path, filename):
+
+class _OnnxClampInferenceExporter(nn.Module):
+  def __init__(self, policy: object, verbose: bool = False):
+    super().__init__()
+    self.verbose = verbose
+    self.policy_type: str
+
+    if isinstance(policy, ClampActorCriticMimic):
+      self.policy_type = "teacher"
+      self.actor = copy.deepcopy(policy.actor)
+      self.normalizer = copy.deepcopy(policy.actor_obs_normalizer)
+      self.motion_encoder: MotionEncoder | None = copy.deepcopy(
+        policy.actor_motion_encoder
+      )
+      self.motion_obs_dim = int(policy.motion_obs_dim)
+      self.single_motion_obs_dim = int(policy.single_motion_obs_dim)
+    elif isinstance(policy, ClampStudentActorCritic):
+      self.policy_type = "student_rl"
+      self.actor = copy.deepcopy(policy.actor)
+      self.normalizer = copy.deepcopy(policy.actor_obs_normalizer)
+      self.motion_encoder = None
+      self.motion_obs_dim = 0
+      self.single_motion_obs_dim = 0
+    elif isinstance(policy, ClampStudentTeacherDistill):
+      self.policy_type = "student_distillation"
+      self.actor = copy.deepcopy(policy.student)
+      self.normalizer = copy.deepcopy(policy.student_obs_normalizer)
+      self.motion_encoder = None
+      self.motion_obs_dim = 0
+      self.single_motion_obs_dim = 0
+    else:
+      raise TypeError(
+        "Unsupported policy type for CLAMP ONNX export: "
+        f"{type(policy).__name__}."
+      )
+
+  def forward(self, obs: torch.Tensor) -> torch.Tensor:
+    actor_obs = self.normalizer(obs)
+    if self.policy_type == "teacher":
+      assert self.motion_encoder is not None
+      motion_obs = actor_obs[:, : self.motion_obs_dim]
+      remainder = actor_obs[:, self.motion_obs_dim :]
+      motion_latent = self.motion_encoder(motion_obs)
+      first_step_motion = motion_obs[:, : self.single_motion_obs_dim]
+      actor_input = torch.cat((remainder, first_step_motion, motion_latent), dim=-1)
+      return self.actor(actor_input)
+    return self.actor(actor_obs)
+
+  def export(self, path: str, filename: str, policy_obs_dim: int) -> None:
     self.to("cpu")
-    obs = torch.zeros(1, self.actor[0].in_features)
-    time_step = torch.zeros(1, 1)
+    self.eval()
+    obs = torch.zeros(1, policy_obs_dim)
     torch.onnx.export(
       self,
-      (obs, time_step),
+      obs,
       os.path.join(path, filename),
       export_params=True,
       opset_version=11,
       verbose=self.verbose,
-      input_names=["obs", "time_step"],
-      output_names=[
-        "actions",
-        "joint_pos",
-        "joint_vel",
-        "body_pos_w",
-        "body_quat_w",
-        "body_lin_vel_w",
-        "body_ang_vel_w",
-      ],
+      input_names=["obs"],
+      output_names=["actions"],
       dynamic_axes={},
       dynamo=False,
     )

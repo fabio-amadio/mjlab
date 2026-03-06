@@ -1,9 +1,16 @@
+import os
+
 import rsl_rl.runners.distillation_runner as rsl_distillation_runner
+import wandb
 from rsl_rl.env.vec_env import VecEnv
 from rsl_rl.runners import DistillationRunner
 
 from mjlab.rl import RslRlVecEnvWrapper
 from mjlab.tasks.clamp.mdp import MotionCommandCfg
+from mjlab.tasks.clamp.rl.exporter import (
+  attach_onnx_metadata,
+  export_clamp_policy_as_onnx,
+)
 from mjlab.tasks.clamp.rl.distillation_policy import ClampStudentTeacherDistill
 
 
@@ -73,3 +80,27 @@ class ClampDistillationRunner(DistillationRunner):
     policy_cfg.setdefault("teacher_print_model_structure", False)
 
     train_cfg["policy"] = policy_cfg
+
+  def save(self, path: str, infos=None):
+    """Save distillation checkpoint and export student policy ONNX."""
+    super().save(path, infos)
+
+    policy_path = path.split("model")[0]
+    filename = policy_path.split("/")[-2] + ".onnx"
+    export_clamp_policy_as_onnx(
+      self.env.unwrapped,
+      self.alg.policy,
+      path=policy_path,
+      filename=filename,
+    )
+
+    run_name = wandb.run.name if self.logger_type == "wandb" and wandb.run else "local"
+    attach_onnx_metadata(
+      self.env.unwrapped,
+      run_name,  # type: ignore[arg-type]
+      path=policy_path,
+      filename=filename,
+    )
+
+    if self.logger_type in ["wandb"]:
+      wandb.save(policy_path + filename, base_path=os.path.dirname(policy_path))

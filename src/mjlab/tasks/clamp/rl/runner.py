@@ -6,10 +6,10 @@ from rsl_rl.env.vec_env import VecEnv
 
 from mjlab.rl import RslRlVecEnvWrapper
 from mjlab.rl.runner import MjlabOnPolicyRunner
-from mjlab.tasks.clamp.mdp import MotionCommand, MotionCommandCfg
+from mjlab.tasks.clamp.mdp import MotionCommandCfg
 from mjlab.tasks.clamp.rl.exporter import (
   attach_onnx_metadata,
-  export_motion_policy_as_onnx,
+  export_clamp_policy_as_onnx,
 )
 from mjlab.tasks.clamp.rl.policy import ClampActorCriticMimic
 from mjlab.tasks.clamp.rl.student_policy import ClampStudentActorCritic
@@ -77,21 +77,11 @@ class ClampOnPolicyRunner(MjlabOnPolicyRunner):
     """Save the model and training information."""
     super().save(path, infos)
 
-    motion_term = self.env.unwrapped.command_manager.get_term("motion")
-    if isinstance(motion_term, MotionCommand) and motion_term.motion is None:
-      # Multi-motion datasets use motion libraries; ONNX export is deferred.
-      return
-
     policy_path = path.split("model")[0]
     filename = policy_path.split("/")[-2] + ".onnx"
-    if self.alg.policy.actor_obs_normalization:
-      normalizer = self.alg.policy.actor_obs_normalizer
-    else:
-      normalizer = None
-    export_motion_policy_as_onnx(
+    export_clamp_policy_as_onnx(
       self.env.unwrapped,
       self.alg.policy,
-      normalizer=normalizer,
       path=policy_path,
       filename=filename,
     )
