@@ -88,6 +88,22 @@ class RslRlPpoAlgorithmCfg:
 
 
 @dataclass
+class RslRlDistillPpoAlgorithmCfg(RslRlPpoAlgorithmCfg):
+  """Config for mixed PPO + distillation (BC) updates."""
+
+  class_name: str = "DistillPPO"
+  """Ignore, required by RSL-RL."""
+  bc_coef_start: float = 1.0
+  """Initial BC loss coefficient."""
+  bc_coef_end: float = 0.0
+  """Final BC loss coefficient after annealing."""
+  bc_anneal_iters: int = 10_000
+  """Number of PPO update iterations used to anneal BC coefficient."""
+  bc_loss_type: Literal["mse", "huber"] = "mse"
+  """Behavior cloning loss type."""
+
+
+@dataclass
 class RslRlDistillationAlgorithmCfg:
   """Config for the distillation algorithm."""
 

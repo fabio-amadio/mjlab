@@ -2,6 +2,7 @@ from mjlab.rl.config import RslRlBaseRunnerCfg as RslRlBaseRunnerCfg
 from mjlab.rl.config import (
   RslRlDistillationAlgorithmCfg as RslRlDistillationAlgorithmCfg,
 )
+from mjlab.rl.config import RslRlDistillPpoAlgorithmCfg as RslRlDistillPpoAlgorithmCfg
 from mjlab.rl.config import (
   RslRlDistillationRunnerCfg as RslRlDistillationRunnerCfg,
 )

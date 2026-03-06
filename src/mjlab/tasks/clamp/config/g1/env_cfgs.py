@@ -12,6 +12,9 @@ from mjlab.entity import EntityArticulationInfoCfg
 from mjlab.envs import ManagerBasedRlEnvCfg
 from mjlab.envs.mdp.actions import JointPositionActionCfg
 from mjlab.sensor import ContactMatch, ContactSensorCfg
+from mjlab.tasks.clamp.clamp_student_distill_rl_env_cfg import (
+  make_clamp_student_distill_rl_env_cfg,
+)
 from mjlab.tasks.clamp.clamp_student_distillation_env_cfg import (
   make_clamp_student_distillation_env_cfg,
 )
@@ -177,3 +180,10 @@ def unitree_g1_flat_clamp_student_distillation_env_cfg(
   return _apply_unitree_g1_overrides(
     make_clamp_student_distillation_env_cfg(), play=play
   )
+
+
+def unitree_g1_flat_clamp_student_distill_rl_env_cfg(
+  play: bool = False,
+) -> ManagerBasedRlEnvCfg:
+  """Create Unitree G1 CLAMP student distill+RL configuration."""
+  return _apply_unitree_g1_overrides(make_clamp_student_distill_rl_env_cfg(), play=play)
