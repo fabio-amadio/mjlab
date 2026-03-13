@@ -59,7 +59,7 @@ def unitree_g1_clamp_student_rl_ppo_runner_cfg() -> RslRlOnPolicyRunnerCfg:
       activation="elu",
     ),
     algorithm=RslRlPpoAlgorithmCfg(
-      value_loss_coef=1.0,
+      value_loss_coef=1.5,
       use_clipped_value_loss=True,
       clip_param=0.2,
       entropy_coef=0.0025,
