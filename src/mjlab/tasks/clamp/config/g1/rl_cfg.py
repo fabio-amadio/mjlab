@@ -1,10 +1,10 @@
 """RL configuration for Unitree G1 CLAMP task."""
 
 from mjlab.rl import (
-  RslRlDistillPpoAlgorithmCfg,
   RslRlDistillationAlgorithmCfg,
   RslRlDistillationRunnerCfg,
   RslRlDistillationStudentTeacherCfg,
+  RslRlDistillPpoAlgorithmCfg,
   RslRlOnPolicyRunnerCfg,
   RslRlPpoActorCriticCfg,
   RslRlPpoAlgorithmCfg,

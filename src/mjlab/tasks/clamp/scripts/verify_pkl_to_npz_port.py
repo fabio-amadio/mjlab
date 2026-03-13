@@ -71,11 +71,19 @@ class FileMetrics:
 
 
 def _default_pkl_root() -> Path:
-  return Path(__file__).resolve().parents[5] / "assets" / "motions" / "twist_motion_dataset"
+  return (
+    Path(__file__).resolve().parents[5] / "assets" / "motions" / "twist_motion_dataset"
+  )
 
 
 def _default_npz_root() -> Path:
-  return Path(__file__).resolve().parents[5] / "assets" / "motions" / "clamp" / "g1_motions_npz"
+  return (
+    Path(__file__).resolve().parents[5]
+    / "assets"
+    / "motions"
+    / "clamp"
+    / "g1_motions_npz"
+  )
 
 
 def _parse_args() -> Args:
@@ -154,7 +162,9 @@ def _parse_args() -> Args:
     root_body_name=ns.root_body_name,
     pkl_quat_convention=ns.pkl_quat_convention,
     max_files=ns.max_files,
-    report_json=ns.report_json.expanduser().resolve() if ns.report_json is not None else None,
+    report_json=ns.report_json.expanduser().resolve()
+    if ns.report_json is not None
+    else None,
     top_k=max(1, int(ns.top_k)),
     fail_root_pos_max=ns.fail_root_pos_max,
     fail_root_ori_deg_max=ns.fail_root_ori_deg_max,
@@ -250,7 +260,13 @@ def _pair_metrics(args: Args, pkl_path: Path, npz_path: Path) -> FileMetrics:
 
   pkl = _load_pkl(pkl_path)
   with np.load(npz_path, allow_pickle=False) as npz:
-    required_pkl = {"root_pos", "root_rot", "local_body_pos", "link_body_list", "dof_pos"}
+    required_pkl = {
+      "root_pos",
+      "root_rot",
+      "local_body_pos",
+      "link_body_list",
+      "dof_pos",
+    }
     required_npz = {"joint_pos", "body_pos_w", "body_quat_w", "body_names"}
     missing_pkl = sorted(required_pkl.difference(set(pkl.keys())))
     missing_npz = sorted(required_npz.difference(set(npz.files)))
@@ -321,9 +337,7 @@ def _pair_metrics(args: Args, pkl_path: Path, npz_path: Path) -> FileMetrics:
     root_idx_npz = body_names_npz.index(args.root_body_name)
   elif len(body_names_npz) > 0:
     root_idx_npz = 0
-    metrics.message = (
-      f"root body `{args.root_body_name}` missing in NPZ; fallback to `{body_names_npz[0]}`"
-    )
+    metrics.message = f"root body `{args.root_body_name}` missing in NPZ; fallback to `{body_names_npz[0]}`"
   else:
     metrics.status = "error"
     metrics.message = "NPZ body_names is empty"
@@ -362,7 +376,11 @@ def _pair_metrics(args: Args, pkl_path: Path, npz_path: Path) -> FileMetrics:
     metrics.body_pos_mae = float(np.mean(body_pos_err))
     metrics.body_pos_max = float(np.max(body_pos_err))
 
-  if dof_pos_pkl.ndim == 2 and joint_pos_npz.ndim == 2 and dof_pos_pkl.shape[1] == joint_pos_npz.shape[1]:
+  if (
+    dof_pos_pkl.ndim == 2
+    and joint_pos_npz.ndim == 2
+    and dof_pos_pkl.shape[1] == joint_pos_npz.shape[1]
+  ):
     joint_pos_err = np.abs(dof_pos_pkl[:num_frames] - joint_pos_npz[:num_frames])
     metrics.joint_pos_mae = float(np.mean(joint_pos_err))
     metrics.joint_pos_max = float(np.max(joint_pos_err))
@@ -403,7 +421,12 @@ def _print_summary(results: list[FileMetrics], top_k: int) -> None:
     rows.sort(key=lambda r: float(getattr(r, metric_name)), reverse=True)
     return rows[:top_k]
 
-  for metric_name in ("root_pos_max", "root_ori_deg_max", "body_pos_max", "joint_pos_max"):
+  for metric_name in (
+    "root_pos_max",
+    "root_ori_deg_max",
+    "body_pos_max",
+    "joint_pos_max",
+  ):
     rows = _top(metric_name)
     if len(rows) == 0:
       continue
@@ -483,7 +506,9 @@ def main() -> None:
       results.append(_pair_metrics(args, pkl_path, npz_path))
     except Exception as exc:  # noqa: BLE001
       results.append(
-        FileMetrics(rel_path=str(rel), status="error", message=f"{type(exc).__name__}: {exc}")
+        FileMetrics(
+          rel_path=str(rel), status="error", message=f"{type(exc).__name__}: {exc}"
+        )
       )
 
   _print_summary(results, args.top_k)

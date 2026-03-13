@@ -1,33 +1,12 @@
-from .motion_command import JointRefMotionCommand, MotionCommand, MotionCommandCfg
-from .motion_command_dual_view import (
-  DualViewMotionCommand,
-  DualViewMotionCommandCfg,
-)
-from .motion_command_future_joint_ref import (
-  FutureJointRefAnchorMotionCommand,
-  FutureJointRefAnchorMotionCommandCfg,
-  FutureJointRefMotionCommand,
-  FutureJointRefMotionCommandCfg,
-)
-from .motion_command_hand_base import (
-  HandBaseMotionCommand,
-  HandBaseMotionCommandCfg,
-)
-from .motion_library import MotionFrameBatch, MotionLoader, NpzMotionLibrary
+from .motion.base import MotionCommand, MotionCommandCfg
+from .motion.future_joint_ref import FutureJointRefAnchorMotionCommandCfg
+from .motion.joint_ref import JointRefMotionCommandCfg
+from .motion.teacher_student import TeacherStudentMotionCommandCfg
 
 __all__ = [
-  "MotionLoader",
-  "MotionFrameBatch",
-  "NpzMotionLibrary",
   "MotionCommand",
-  "JointRefMotionCommand",
-  "FutureJointRefMotionCommand",
-  "FutureJointRefAnchorMotionCommand",
-  "HandBaseMotionCommand",
-  "DualViewMotionCommand",
   "MotionCommandCfg",
-  "FutureJointRefMotionCommandCfg",
+  "JointRefMotionCommandCfg",
   "FutureJointRefAnchorMotionCommandCfg",
-  "HandBaseMotionCommandCfg",
-  "DualViewMotionCommandCfg",
+  "TeacherStudentMotionCommandCfg",
 ]

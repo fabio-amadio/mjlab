@@ -1,6 +1,6 @@
 from mjlab.tasks.clamp.rl import (
-  ClampDistillPpoRunner,
   ClampDistillationRunner,
+  ClampDistillPpoRunner,
   ClampOnPolicyRunner,
 )
 from mjlab.tasks.registry import register_mjlab_task

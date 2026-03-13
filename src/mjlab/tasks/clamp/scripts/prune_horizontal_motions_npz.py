@@ -47,7 +47,13 @@ class FileResult:
 
 
 def _default_npz_root() -> Path:
-  return Path(__file__).resolve().parents[5] / "assets" / "motions" / "clamp" / "g1_motions_npz"
+  return (
+    Path(__file__).resolve().parents[5]
+    / "assets"
+    / "motions"
+    / "clamp"
+    / "g1_motions_npz"
+  )
 
 
 def _parse_args() -> Args:
@@ -273,7 +279,9 @@ def main() -> None:
   print(f"OK: {ok_count}")
   print(f"Flagged: {flagged_count}")
   print(f"Errors: {err_count}")
-  print(f"Actions -> deleted: {deleted_count}, moved: {moved_count}, dry-run: {dry_run_count}")
+  print(
+    f"Actions -> deleted: {deleted_count}, moved: {moved_count}, dry-run: {dry_run_count}"
+  )
 
   flagged = [r for r in results if r.status == "flagged"]
   flagged.sort(key=lambda r: (r.min_abs_up_z if r.min_abs_up_z is not None else 1.0))

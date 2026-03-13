@@ -2,4 +2,3 @@
 
 Initial scaffold for the CLAMP training pipeline.
 """
-

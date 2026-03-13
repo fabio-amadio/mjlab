@@ -7,8 +7,7 @@ import torch
 from mjlab.sensor import ContactSensor
 from mjlab.utils.lab_api.math import matrix_from_quat, subtract_frame_transforms
 
-from .motion_command import MotionCommand
-from .motion_command_dual_view import DualViewMotionCommand
+from .motion.base import MotionCommand
 
 if TYPE_CHECKING:
   from mjlab.envs import ManagerBasedRlEnv
@@ -77,19 +76,18 @@ def feet_contact_mask(env: ManagerBasedRlEnv, sensor_name: str) -> torch.Tensor:
   return (sensor_data.found > 0).float()
 
 
+def motion_command_representation(
+  env: ManagerBasedRlEnv,
+  command_name: str,
+  representation_name: str = "default",
+) -> torch.Tensor:
+  command = cast(MotionCommand, env.command_manager.get_term(command_name))
+  return command.get_command_representation(representation_name)
+
+
 def motion_student_command(env: ManagerBasedRlEnv, command_name: str) -> torch.Tensor:
-  command = env.command_manager.get_term(command_name)
-  if isinstance(command, DualViewMotionCommand):
-    return command.student_command
-  fallback = env.command_manager.get_command(command_name)
-  assert fallback is not None
-  return fallback
+  return motion_command_representation(env, command_name, representation_name="default")
 
 
 def motion_teacher_command(env: ManagerBasedRlEnv, command_name: str) -> torch.Tensor:
-  command = env.command_manager.get_term(command_name)
-  if isinstance(command, DualViewMotionCommand):
-    return command.teacher_command
-  fallback = env.command_manager.get_command(command_name)
-  assert fallback is not None
-  return fallback
+  return motion_command_representation(env, command_name, representation_name="teacher")

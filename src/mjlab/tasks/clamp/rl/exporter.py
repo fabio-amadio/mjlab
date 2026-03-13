@@ -1,9 +1,8 @@
 import copy
 import os
-from typing import cast
 
-import torch.nn as nn
 import torch
+import torch.nn as nn
 
 from mjlab.envs import ManagerBasedRlEnv
 from mjlab.rl.exporter_utils import (
@@ -77,8 +76,7 @@ class _OnnxClampInferenceExporter(nn.Module):
       self.single_motion_obs_dim = 0
     else:
       raise TypeError(
-        "Unsupported policy type for CLAMP ONNX export: "
-        f"{type(policy).__name__}."
+        f"Unsupported policy type for CLAMP ONNX export: {type(policy).__name__}."
       )
 
   def forward(self, obs: torch.Tensor) -> torch.Tensor:

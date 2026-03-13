@@ -12,7 +12,7 @@ from mjlab.tasks.clamp.clamp_student_rl_env_cfg import (
   student_motion_command_kwargs,
 )
 from mjlab.tasks.clamp.clamp_teacher_env_cfg import DEFAULT_TEACHER_FUTURE_STEPS
-from mjlab.tasks.clamp.mdp import DualViewMotionCommandCfg
+from mjlab.tasks.clamp.mdp import TeacherStudentMotionCommandCfg
 
 
 def make_clamp_student_distill_rl_env_cfg() -> ManagerBasedRlEnvCfg:
@@ -20,18 +20,7 @@ def make_clamp_student_distill_rl_env_cfg() -> ManagerBasedRlEnvCfg:
   cfg = make_clamp_student_rl_env_cfg()
 
   policy_group = cfg.observations["policy"]
-  policy_terms = dict(policy_group.terms)
-  policy_terms["command"] = ObservationTermCfg(
-    func=mdp.motion_student_command,
-    params={"command_name": "motion"},
-  )
-  cfg.observations["policy"] = ObservationGroupCfg(
-    terms=policy_terms,
-    concatenate_terms=True,
-    enable_corruption=policy_group.enable_corruption,
-  )
-
-  teacher_policy_terms = dict(policy_terms)
+  teacher_policy_terms = dict(policy_group.terms)
   teacher_policy_terms["command"] = ObservationTermCfg(
     func=mdp.motion_teacher_command,
     params={"command_name": "motion"},
@@ -42,9 +31,9 @@ def make_clamp_student_distill_rl_env_cfg() -> ManagerBasedRlEnvCfg:
     enable_corruption=False,
   )
 
-  cfg.commands["motion"] = DualViewMotionCommandCfg(
+  cfg.commands["motion"] = TeacherStudentMotionCommandCfg(
     **student_motion_command_kwargs(),
-    command_step_offsets=DEFAULT_TEACHER_FUTURE_STEPS,
+    future_sampling_step_offsets=DEFAULT_TEACHER_FUTURE_STEPS,
   )
 
   return cfg

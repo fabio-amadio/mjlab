@@ -1,9 +1,11 @@
+from typing import cast
+
 import rsl_rl.runners.on_policy_runner as rsl_on_policy_runner
 from rsl_rl.env.vec_env import VecEnv
 
 from mjlab.rl.runner import MjlabOnPolicyRunner
 from mjlab.rl.vecenv_wrapper import RslRlVecEnvWrapper
-from mjlab.tasks.clamp.mdp import MotionCommandCfg
+from mjlab.tasks.clamp.mdp import MotionCommand, MotionCommandCfg
 from mjlab.tasks.clamp.rl.distill_ppo_algorithm import DistillPPO
 from mjlab.tasks.clamp.rl.distill_ppo_policy import ClampStudentDistillPpoActorCritic
 from mjlab.tasks.clamp.rl.policy import ClampActorCriticMimic
@@ -42,12 +44,12 @@ class ClampDistillPpoRunner(ClampOnPolicyRunner):
     motion_cmd_cfg = env_unwrapped.cfg.commands.get("motion")
     if not isinstance(motion_cmd_cfg, MotionCommandCfg):
       return None
-    motion_term = env_unwrapped.command_manager.get_term("motion")
-    teacher_command = getattr(motion_term, "teacher_command", None)
-    if teacher_command is None:
+    motion_term = cast(MotionCommand, env_unwrapped.command_manager.get_term("motion"))
+    if motion_term is None or not motion_term.has_command_representation("teacher"):
       return None
+    teacher_command = motion_term.get_command_representation("teacher")
     motion_obs_dim = int(teacher_command.shape[-1])
-    motion_steps = len(getattr(motion_cmd_cfg, "command_step_offsets", ()))
+    motion_steps = len(motion_term.future_sampling_step_offsets)
     if motion_steps <= 0:
       motion_steps = 1
     return motion_obs_dim, motion_steps

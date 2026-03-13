@@ -1,3 +1,5 @@
+"""Motion-data loading and library query utilities for CLAMP."""
+
 from __future__ import annotations
 
 import os
@@ -9,6 +11,8 @@ from pathlib import Path
 import numpy as np
 import torch
 
+from .indexing import build_name_to_index
+
 try:
   from tqdm import tqdm
 except ModuleNotFoundError:
@@ -16,6 +20,8 @@ except ModuleNotFoundError:
 
 
 class MotionLoader:
+  """Load a single motion NPZ file into torch tensors."""
+
   def __init__(
     self,
     motion_file: str,
@@ -52,12 +58,8 @@ class MotionLoader:
         body_quat_w = body_quat_w[:, selected_indices, :]
         body_lin_vel_w = body_lin_vel_w[:, selected_indices, :]
         body_ang_vel_w = body_ang_vel_w[:, selected_indices, :]
-      self.body_pos_w = torch.tensor(
-        body_pos_w, dtype=torch.float32, device=device
-      )
-      self.body_quat_w = torch.tensor(
-        body_quat_w, dtype=torch.float32, device=device
-      )
+      self.body_pos_w = torch.tensor(body_pos_w, dtype=torch.float32, device=device)
+      self.body_quat_w = torch.tensor(body_quat_w, dtype=torch.float32, device=device)
       self.body_lin_vel_w = torch.tensor(
         body_lin_vel_w, dtype=torch.float32, device=device
       )
@@ -88,6 +90,8 @@ class MotionLoader:
 
 @dataclass
 class MotionFrameBatch:
+  """Batch of queried motion-reference tensors in [env, ...] form."""
+
   joint_pos: torch.Tensor
   joint_vel: torch.Tensor
   body_pos_w: torch.Tensor
@@ -128,21 +132,6 @@ def _load_yaml_config(yaml_path: Path) -> dict[str, object]:
   return data
 
 
-def _build_name_to_index(body_names: tuple[str, ...], source: str) -> dict[str, int]:
-  name_to_index: dict[str, int] = {}
-  duplicates: list[str] = []
-  for index, name in enumerate(body_names):
-    if name in name_to_index:
-      duplicates.append(name)
-    else:
-      name_to_index[name] = index
-  if duplicates:
-    raise ValueError(
-      f"Duplicate body names found in motion source `{source}`: {sorted(set(duplicates))}"
-    )
-  return name_to_index
-
-
 def _resolve_required_body_indices(
   file_body_names: tuple[str, ...],
   required_body_names: tuple[str, ...],
@@ -156,14 +145,16 @@ def _resolve_required_body_indices(
       f"`required_body_names` contains duplicates for `{source}`: {required_body_names}"
     )
 
-  name_to_index = _build_name_to_index(file_body_names, str(source))
+  name_to_index = build_name_to_index(file_body_names, str(source))
   missing = [name for name in required_body_names if name not in name_to_index]
   if missing:
     raise ValueError(
       f"Missing required motion bodies in `{source}`: {missing}. "
       f"Available bodies: {file_body_names}"
     )
-  return np.asarray([name_to_index[name] for name in required_body_names], dtype=np.int64)
+  return np.asarray(
+    [name_to_index[name] for name in required_body_names], dtype=np.int64
+  )
 
 
 def _quat_slerp_batch(
@@ -505,15 +496,19 @@ class NpzMotionLibrary:
     return motion_files, motion_weights
 
   def num_motions(self) -> int:
+    """Return the number of clips loaded into the library."""
     return int(self.motion_num_frames.shape[0])
 
   def get_motion_length(self, motion_ids: torch.Tensor) -> torch.Tensor:
+    """Return clip lengths in seconds for the given motion ids."""
     return self.motion_lengths_s[motion_ids]
 
   def sample_motions(self, n: int) -> torch.Tensor:
+    """Sample motion ids according to per-clip weights."""
     return torch.multinomial(self.motion_weights, num_samples=n, replacement=True)
 
   def sample_time(self, motion_ids: torch.Tensor) -> torch.Tensor:
+    """Sample a random time uniformly within each selected clip."""
     return torch.rand(motion_ids.shape, device=self.device) * self.get_motion_length(
       motion_ids
     )
@@ -544,6 +539,7 @@ class NpzMotionLibrary:
     motion_times: torch.Tensor,
     anchor_body_index: int,
   ) -> MotionFrameBatch:
+    """Interpolate and return motion-reference tensors at the requested times."""
     frame_idx0, frame_idx1, blend = self._calc_frame_blend(motion_ids, motion_times)
 
     joint_pos0 = self.joint_pos[frame_idx0]

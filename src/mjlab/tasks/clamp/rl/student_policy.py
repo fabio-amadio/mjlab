@@ -23,12 +23,11 @@ class ClampStudentActorCritic(ActorCritic):
     actor_state_dict: dict[str, torch.Tensor] = {}
     for key, value in state_dict.items():
       if key.startswith(self._DISTILL_STUDENT_PREFIX):
-        mapped_key = f"actor.{key[len(self._DISTILL_STUDENT_PREFIX):]}"
+        mapped_key = f"actor.{key[len(self._DISTILL_STUDENT_PREFIX) :]}"
         actor_state_dict[mapped_key] = value
       elif key.startswith(self._DISTILL_NORMALIZER_PREFIX):
         mapped_key = (
-          "actor_obs_normalizer."
-          f"{key[len(self._DISTILL_NORMALIZER_PREFIX):]}"
+          f"actor_obs_normalizer.{key[len(self._DISTILL_NORMALIZER_PREFIX) :]}"
         )
         actor_state_dict[mapped_key] = value
       elif key in ("std", "log_std"):

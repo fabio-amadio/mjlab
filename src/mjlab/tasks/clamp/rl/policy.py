@@ -46,9 +46,7 @@ class MotionEncoder(nn.Module):
     conv_strides = tuple(int(v) for v in conv_strides)
     if len(conv_channels) == 0:
       raise ValueError("`conv_channels` must contain at least one value.")
-    if not (
-      len(conv_channels) == len(conv_kernel_sizes) == len(conv_strides)
-    ):
+    if not (len(conv_channels) == len(conv_kernel_sizes) == len(conv_strides)):
       raise ValueError(
         "Conv config lengths must match: "
         f"conv_layers={len(conv_channels)}, kernels={len(conv_kernel_sizes)}, strides={len(conv_strides)}."

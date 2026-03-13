@@ -86,9 +86,9 @@ class DistillPPO(PPO):
     ) in generator:
       if self.normalize_advantage_per_mini_batch:
         with torch.no_grad():
-          advantages_batch = (
-            advantages_batch - advantages_batch.mean()
-          ) / (advantages_batch.std() + 1e-8)
+          advantages_batch = (advantages_batch - advantages_batch.mean()) / (
+            advantages_batch.std() + 1e-8
+          )
 
       self.policy.act(obs_batch, masks=masks_batch, hidden_states=hid_states_batch[0])
       actions_log_prob_batch = self.policy.get_actions_log_prob(actions_batch)
@@ -103,9 +103,7 @@ class DistillPPO(PPO):
         with torch.inference_mode():
           kl = torch.sum(
             torch.log(sigma_batch / old_sigma_batch + 1.0e-5)
-            + (
-              torch.square(old_sigma_batch) + torch.square(old_mu_batch - mu_batch)
-            )
+            + (torch.square(old_sigma_batch) + torch.square(old_mu_batch - mu_batch))
             / (2.0 * torch.square(sigma_batch))
             - 0.5,
             axis=-1,
@@ -130,7 +128,9 @@ class DistillPPO(PPO):
           for param_group in self.optimizer.param_groups:
             param_group["lr"] = self.learning_rate
 
-      ratio = torch.exp(actions_log_prob_batch - torch.squeeze(old_actions_log_prob_batch))
+      ratio = torch.exp(
+        actions_log_prob_batch - torch.squeeze(old_actions_log_prob_batch)
+      )
       surrogate = -torch.squeeze(advantages_batch) * ratio
       surrogate_clipped = -torch.squeeze(advantages_batch) * torch.clamp(
         ratio, 1.0 - self.clip_param, 1.0 + self.clip_param

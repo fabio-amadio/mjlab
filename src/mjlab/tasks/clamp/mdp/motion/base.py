@@ -1,3 +1,5 @@
+"""Core CLAMP motion-command state, reference queries, and shared utilities."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -14,10 +16,10 @@ from mjlab.utils.lab_api.math import (
 )
 from mjlab.viewer.debug_visualizer import DebugVisualizer
 
-from .motion_debug import debug_visualize_motion_command
-from .motion_indexing import build_name_to_index, resolve_motion_body_names
-from .motion_library import MotionFrameBatch, MotionLoader, NpzMotionLibrary
-from .motion_sampling import (
+from .debug_visualizer import debug_visualize_motion_command
+from .indexing import build_name_to_index, resolve_motion_body_names
+from .library import MotionFrameBatch, MotionLoader, NpzMotionLibrary
+from .sampling import (
   adaptive_sampling,
   resample_command,
   uniform_sampling,
@@ -28,10 +30,16 @@ if TYPE_CHECKING:
   from mjlab.entity import Entity
   from mjlab.envs import ManagerBasedRlEnv
 
-_DESIRED_FRAME_COLORS = ((1.0, 0.5, 0.5), (0.5, 1.0, 0.5), (0.5, 0.5, 1.0))
-
 
 class MotionCommand(CommandTerm):
+  """Base CLAMP motion command term.
+
+  This class owns the synchronized motion-reference state shared by all CLAMP
+  command variants: current motion selection, time within the clip, mapped body
+  indices, reference queries, adaptive-sampling statistics, and debug
+  visualization hooks.
+  """
+
   cfg: MotionCommandCfg
   _env: ManagerBasedRlEnv
 
@@ -40,22 +48,41 @@ class MotionCommand(CommandTerm):
 
     self.robot: Entity = env.scene[cfg.entity_name]
     self._uses_motion_library = False
-
-    if cfg.anchor_body_name == "":
-      raise ValueError("`anchor_body_name` must be set for MotionCommand.")
-    if len(cfg.body_names) == 0:
-      raise ValueError("`body_names` must be non-empty for MotionCommand.")
-    self.root_body_name = cfg.root_body_name or cfg.body_names[0]
-    if self.root_body_name == "":
-      raise ValueError("`root_body_name` cannot be empty when provided.")
-    required_motion_body_names = tuple(
-      dict.fromkeys((cfg.anchor_body_name, *cfg.body_names, self.root_body_name))
-    )
+    self.root_body_name = self._resolve_root_body_name()
 
     self.motion: MotionLoader | None = None
     self.motion_lib: NpzMotionLibrary | None = None
     self._current_motion_frame: MotionFrameBatch | None = None
+    self._load_motion_source(self._required_motion_body_names())
+    self._initialize_body_mappings()
+    self._initialize_tracking_buffers()
+    self._initialize_metrics()
 
+    # Ghost model created lazily on first visualization
+    self._ghost_model: mujoco.MjModel | None = None
+    self._ghost_color = np.array(cfg.viz.ghost_color, dtype=np.float32)
+
+  def _resolve_root_body_name(self) -> str:
+    """Resolve and validate the body used as the articulated root reference."""
+    if self.cfg.anchor_body_name == "":
+      raise ValueError("`anchor_body_name` must be set for MotionCommand.")
+    if len(self.cfg.body_names) == 0:
+      raise ValueError("`body_names` must be non-empty for MotionCommand.")
+    root_body_name = self.cfg.root_body_name or self.cfg.body_names[0]
+    if root_body_name == "":
+      raise ValueError("`root_body_name` cannot be empty when provided.")
+    return root_body_name
+
+  def _required_motion_body_names(self) -> tuple[str, ...]:
+    """Return the unique set of bodies that must be present in the motion data."""
+    return tuple(
+      dict.fromkeys(
+        (self.cfg.anchor_body_name, *self.cfg.body_names, self.root_body_name)
+      )
+    )
+
+  def _load_motion_source(self, required_motion_body_names: tuple[str, ...]) -> None:
+    """Load either a single NPZ clip or a multi-clip motion library."""
     source = Path(self.cfg.motion_file)
     if source.suffix == ".npz":
       if not source.is_file():
@@ -65,22 +92,25 @@ class MotionCommand(CommandTerm):
         device=self.device,
         required_body_names=required_motion_body_names,
       )
-    else:
-      self.motion_lib = NpzMotionLibrary(
-        self.cfg.motion_file,
-        device=self.device,
-        show_progress=self.cfg.show_motion_load_progress,
-        required_body_names=required_motion_body_names,
-      )
-      self._uses_motion_library = True
+      return
 
+    self.motion_lib = NpzMotionLibrary(
+      self.cfg.motion_file,
+      device=self.device,
+      show_progress=self.cfg.show_motion_load_progress,
+      required_body_names=required_motion_body_names,
+    )
+    self._uses_motion_library = True
+
+  def _initialize_body_mappings(self) -> None:
+    """Build robot/motion body index mappings used by all command queries."""
     motion_body_names = resolve_motion_body_names(self)
     motion_name_to_index = build_name_to_index(motion_body_names, source="motion")
     robot_body_names = tuple(self.robot.body_names)
     robot_name_to_index = build_name_to_index(robot_body_names, source="robot")
 
     required_body_names = list(
-      dict.fromkeys((self.cfg.anchor_body_name, *cfg.body_names))
+      dict.fromkeys((self.cfg.anchor_body_name, *self.cfg.body_names))
     )
     missing_motion = [n for n in required_body_names if n not in motion_name_to_index]
     missing_robot = [n for n in required_body_names if n not in robot_name_to_index]
@@ -105,8 +135,9 @@ class MotionCommand(CommandTerm):
       dtype=torch.long,
       device=self.device,
     )
-    # Backward-compatible alias used in downstream utilities.
-    self.body_indexes = self.robot_body_indexes
+
+  def _initialize_tracking_buffers(self) -> None:
+    """Allocate tensors that track current reference state and sampling stats."""
     self.time_steps = torch.zeros(self.num_envs, dtype=torch.long, device=self.device)
     self.motion_ids = torch.zeros(self.num_envs, dtype=torch.long, device=self.device)
     self.motion_time_offsets = torch.zeros(
@@ -114,21 +145,21 @@ class MotionCommand(CommandTerm):
     )
 
     self.body_pos_relative_w = torch.zeros(
-      self.num_envs, len(cfg.body_names), 3, device=self.device
+      self.num_envs, len(self.cfg.body_names), 3, device=self.device
     )
     self.body_quat_relative_w = torch.zeros(
-      self.num_envs, len(cfg.body_names), 4, device=self.device
+      self.num_envs, len(self.cfg.body_names), 4, device=self.device
     )
     self.body_quat_relative_w[:, :, 0] = 1.0
 
     if self._uses_motion_library:
       assert self.motion_lib is not None
       max_motion_len_s = float(torch.max(self.motion_lib.motion_lengths_s).item())
-      self.bin_count = max(int(max_motion_len_s / max(env.step_dt, 1e-6)) + 1, 1)
+      self.bin_count = max(int(max_motion_len_s / max(self._env.step_dt, 1e-6)) + 1, 1)
       self._refresh_motion_frame()
     else:
       assert self.motion is not None
-      self.bin_count = int(self.motion.time_step_total // (1 / env.step_dt)) + 1
+      self.bin_count = int(self.motion.time_step_total // (1 / self._env.step_dt)) + 1
 
     self.bin_failed_count: torch.Tensor | None = None
     self._current_bin_failed: torch.Tensor | None = None
@@ -136,6 +167,7 @@ class MotionCommand(CommandTerm):
     self._current_motion_failed: torch.Tensor | None = None
     self.phase_failed_count: torch.Tensor | None = None
     self._current_phase_failed: torch.Tensor | None = None
+
     if self._uses_motion_library:
       assert self.motion_lib is not None
       num_motions = self.motion_lib.num_motions()
@@ -158,56 +190,47 @@ class MotionCommand(CommandTerm):
       self._current_bin_failed = torch.zeros(
         self.bin_count, dtype=torch.float, device=self.device
       )
+
     self.kernel = torch.tensor(
       [self.cfg.adaptive_lambda**i for i in range(self.cfg.adaptive_kernel_size)],
       device=self.device,
     )
     self.kernel = self.kernel / self.kernel.sum()
 
-    self.metrics["error_anchor_pos"] = torch.zeros(self.num_envs, device=self.device)
-    self.metrics["error_anchor_rot"] = torch.zeros(self.num_envs, device=self.device)
-    self.metrics["error_anchor_lin_vel"] = torch.zeros(
-      self.num_envs, device=self.device
+  def _initialize_metrics(self) -> None:
+    """Create all command metrics eagerly so logging keys stay stable."""
+    metric_names = (
+      "error_anchor_pos",
+      "error_anchor_rot",
+      "error_anchor_lin_vel",
+      "error_anchor_ang_vel",
+      "error_body_pos",
+      "error_body_rot",
+      "error_body_lin_vel",
+      "error_body_ang_vel",
+      "error_joint_pos",
+      "error_joint_vel",
+      "sampling_entropy",
+      "sampling_top1_prob",
+      "sampling_top1_bin",
+      "sampling_motion_entropy",
+      "sampling_motion_top1_prob",
+      "sampling_motion_top1_idx",
+      "sampling_phase_entropy",
+      "sampling_phase_top1_prob",
+      "sampling_phase_top1_bin",
     )
-    self.metrics["error_anchor_ang_vel"] = torch.zeros(
-      self.num_envs, device=self.device
-    )
-    self.metrics["error_body_pos"] = torch.zeros(self.num_envs, device=self.device)
-    self.metrics["error_body_rot"] = torch.zeros(self.num_envs, device=self.device)
-    self.metrics["error_joint_pos"] = torch.zeros(self.num_envs, device=self.device)
-    self.metrics["error_joint_vel"] = torch.zeros(self.num_envs, device=self.device)
-    self.metrics["sampling_entropy"] = torch.zeros(self.num_envs, device=self.device)
-    self.metrics["sampling_top1_prob"] = torch.zeros(self.num_envs, device=self.device)
-    self.metrics["sampling_top1_bin"] = torch.zeros(self.num_envs, device=self.device)
-    self.metrics["sampling_motion_entropy"] = torch.zeros(
-      self.num_envs, device=self.device
-    )
-    self.metrics["sampling_motion_top1_prob"] = torch.zeros(
-      self.num_envs, device=self.device
-    )
-    self.metrics["sampling_motion_top1_idx"] = torch.zeros(
-      self.num_envs, device=self.device
-    )
-    self.metrics["sampling_phase_entropy"] = torch.zeros(
-      self.num_envs, device=self.device
-    )
-    self.metrics["sampling_phase_top1_prob"] = torch.zeros(
-      self.num_envs, device=self.device
-    )
-    self.metrics["sampling_phase_top1_bin"] = torch.zeros(
-      self.num_envs, device=self.device
-    )
-
-    # Ghost model created lazily on first visualization
-    self._ghost_model: mujoco.MjModel | None = None
-    self._ghost_color = np.array(cfg.viz.ghost_color, dtype=np.float32)
+    for metric_name in metric_names:
+      self.metrics[metric_name] = torch.zeros(self.num_envs, device=self.device)
 
   def _current_times_s(self) -> torch.Tensor:
+    """Return the current reference time in seconds for each environment."""
     return (
       self.time_steps.to(torch.float32) * self._env.step_dt + self.motion_time_offsets
     )
 
   def _refresh_motion_frame(self) -> None:
+    """Refresh the cached current frame when using the multi-clip motion library."""
     if not self._uses_motion_library:
       return
     assert self.motion_lib is not None
@@ -226,7 +249,44 @@ class MotionCommand(CommandTerm):
       return self._query_motion_frames_library(step_offsets)
     return self._query_motion_frames_npz(step_offsets)
 
+  def _batched_env_origins(self, num_steps: int) -> torch.Tensor:
+    """Repeat environment origins for a flattened multi-step frame query."""
+    return (
+      self._env.scene.env_origins[:, None, :].expand(-1, num_steps, -1).reshape(-1, 3)
+    )
+
+  def _reshape_motion_frame_batch(
+    self,
+    *,
+    num_steps: int,
+    joint_pos: torch.Tensor,
+    joint_vel: torch.Tensor,
+    body_pos_w: torch.Tensor,
+    body_quat_w: torch.Tensor,
+    body_lin_vel_w: torch.Tensor,
+    body_ang_vel_w: torch.Tensor,
+    anchor_pos_w: torch.Tensor,
+    anchor_quat_w: torch.Tensor,
+    anchor_lin_vel_w: torch.Tensor,
+    anchor_ang_vel_w: torch.Tensor,
+  ) -> MotionFrameBatch:
+    """Pack flattened query results into the standard [env, step, ...] batch form."""
+    num_bodies = len(self.cfg.body_names)
+    return MotionFrameBatch(
+      joint_pos=joint_pos.reshape(self.num_envs, num_steps, -1),
+      joint_vel=joint_vel.reshape(self.num_envs, num_steps, -1),
+      body_pos_w=body_pos_w.reshape(self.num_envs, num_steps, num_bodies, 3),
+      body_quat_w=body_quat_w.reshape(self.num_envs, num_steps, num_bodies, 4),
+      body_lin_vel_w=body_lin_vel_w.reshape(self.num_envs, num_steps, num_bodies, 3),
+      body_ang_vel_w=body_ang_vel_w.reshape(self.num_envs, num_steps, num_bodies, 3),
+      anchor_pos_w=anchor_pos_w.reshape(self.num_envs, num_steps, 3),
+      anchor_quat_w=anchor_quat_w.reshape(self.num_envs, num_steps, 4),
+      anchor_lin_vel_w=anchor_lin_vel_w.reshape(self.num_envs, num_steps, 3),
+      anchor_ang_vel_w=anchor_ang_vel_w.reshape(self.num_envs, num_steps, 3),
+    )
+
   def _query_motion_frames_npz(self, step_offsets: tuple[int, ...]) -> MotionFrameBatch:
+    """Query future frames from a single loaded NPZ clip."""
     assert self.motion is not None
 
     offsets = torch.tensor(step_offsets, dtype=torch.long, device=self.device)
@@ -234,10 +294,7 @@ class MotionCommand(CommandTerm):
     frame_ids = self.time_steps[:, None] + offsets[None, :]
     frame_ids = torch.clamp(frame_ids, min=0, max=self.motion.time_step_total - 1)
     flat_frame_ids = frame_ids.reshape(-1)
-
-    origins = (
-      self._env.scene.env_origins[:, None, :].expand(-1, num_steps, -1).reshape(-1, 3)
-    )
+    origins = self._batched_env_origins(num_steps)
 
     body_pos = (
       self.motion.body_pos_w[flat_frame_ids][:, self.motion_body_indexes]
@@ -262,34 +319,24 @@ class MotionCommand(CommandTerm):
       flat_frame_ids, self.motion_anchor_body_index
     ]
 
-    return MotionFrameBatch(
-      joint_pos=self.motion.joint_pos[flat_frame_ids].reshape(
-        self.num_envs, num_steps, -1
-      ),
-      joint_vel=self.motion.joint_vel[flat_frame_ids].reshape(
-        self.num_envs, num_steps, -1
-      ),
-      body_pos_w=body_pos.reshape(
-        self.num_envs, num_steps, len(self.cfg.body_names), 3
-      ),
-      body_quat_w=body_quat.reshape(
-        self.num_envs, num_steps, len(self.cfg.body_names), 4
-      ),
-      body_lin_vel_w=body_lin_vel.reshape(
-        self.num_envs, num_steps, len(self.cfg.body_names), 3
-      ),
-      body_ang_vel_w=body_ang_vel.reshape(
-        self.num_envs, num_steps, len(self.cfg.body_names), 3
-      ),
-      anchor_pos_w=anchor_pos.reshape(self.num_envs, num_steps, 3),
-      anchor_quat_w=anchor_quat.reshape(self.num_envs, num_steps, 4),
-      anchor_lin_vel_w=anchor_lin_vel.reshape(self.num_envs, num_steps, 3),
-      anchor_ang_vel_w=anchor_ang_vel.reshape(self.num_envs, num_steps, 3),
+    return self._reshape_motion_frame_batch(
+      num_steps=num_steps,
+      joint_pos=self.motion.joint_pos[flat_frame_ids],
+      joint_vel=self.motion.joint_vel[flat_frame_ids],
+      body_pos_w=body_pos,
+      body_quat_w=body_quat,
+      body_lin_vel_w=body_lin_vel,
+      body_ang_vel_w=body_ang_vel,
+      anchor_pos_w=anchor_pos,
+      anchor_quat_w=anchor_quat,
+      anchor_lin_vel_w=anchor_lin_vel,
+      anchor_ang_vel_w=anchor_ang_vel,
     )
 
   def _query_motion_frames_library(
     self, step_offsets: tuple[int, ...]
   ) -> MotionFrameBatch:
+    """Query future frames from the multi-clip motion library."""
     assert self.motion_lib is not None
 
     offsets = torch.tensor(step_offsets, dtype=torch.float32, device=self.device)
@@ -315,9 +362,7 @@ class MotionCommand(CommandTerm):
       anchor_body_index=self.motion_anchor_body_index,
     )
 
-    origins = (
-      self._env.scene.env_origins[:, None, :].expand(-1, num_steps, -1).reshape(-1, 3)
-    )
+    origins = self._batched_env_origins(num_steps)
     body_pos = flat_frames.body_pos_w[:, self.motion_body_indexes] + origins[:, None, :]
     body_quat = flat_frames.body_quat_w[:, self.motion_body_indexes]
     body_lin_vel = flat_frames.body_lin_vel_w[:, self.motion_body_indexes]
@@ -327,158 +372,137 @@ class MotionCommand(CommandTerm):
     anchor_lin_vel = flat_frames.body_lin_vel_w[:, self.motion_anchor_body_index]
     anchor_ang_vel = flat_frames.body_ang_vel_w[:, self.motion_anchor_body_index]
 
-    return MotionFrameBatch(
-      joint_pos=flat_frames.joint_pos.reshape(self.num_envs, num_steps, -1),
-      joint_vel=flat_frames.joint_vel.reshape(self.num_envs, num_steps, -1),
-      body_pos_w=body_pos.reshape(
-        self.num_envs, num_steps, len(self.cfg.body_names), 3
-      ),
-      body_quat_w=body_quat.reshape(
-        self.num_envs, num_steps, len(self.cfg.body_names), 4
-      ),
-      body_lin_vel_w=body_lin_vel.reshape(
-        self.num_envs, num_steps, len(self.cfg.body_names), 3
-      ),
-      body_ang_vel_w=body_ang_vel.reshape(
-        self.num_envs, num_steps, len(self.cfg.body_names), 3
-      ),
-      anchor_pos_w=anchor_pos.reshape(self.num_envs, num_steps, 3),
-      anchor_quat_w=anchor_quat.reshape(self.num_envs, num_steps, 4),
-      anchor_lin_vel_w=anchor_lin_vel.reshape(self.num_envs, num_steps, 3),
-      anchor_ang_vel_w=anchor_ang_vel.reshape(self.num_envs, num_steps, 3),
+    return self._reshape_motion_frame_batch(
+      num_steps=num_steps,
+      joint_pos=flat_frames.joint_pos,
+      joint_vel=flat_frames.joint_vel,
+      body_pos_w=body_pos,
+      body_quat_w=body_quat,
+      body_lin_vel_w=body_lin_vel,
+      body_ang_vel_w=body_ang_vel,
+      anchor_pos_w=anchor_pos,
+      anchor_quat_w=anchor_quat,
+      anchor_lin_vel_w=anchor_lin_vel,
+      anchor_ang_vel_w=anchor_ang_vel,
+    )
+
+  @property
+  def command_representation_names(self) -> tuple[str, ...]:
+    return ("default",)
+
+  def has_command_representation(self, representation_name: str) -> bool:
+    return representation_name in self.command_representation_names
+
+  def get_command_representation(
+    self, representation_name: str = "default"
+  ) -> torch.Tensor:
+    raise KeyError(
+      f"{self.__class__.__name__} does not define command representation "
+      f"{representation_name!r}. Available representations: "
+      f"{self.command_representation_names}."
     )
 
   @property
   def command(self) -> torch.Tensor:
-    return torch.cat([self.joint_pos, self.joint_vel], dim=1)
+    return self.get_command_representation("default")
+
+  @property
+  def future_sampling_step_offsets(self) -> tuple[int, ...]:
+    """Future offsets that must remain valid when sampling/resetting motion state."""
+    return ()
+
+  def _reference_frame_tensor(self, name: str) -> torch.Tensor:
+    """Return the current reference tensor from the active motion source."""
+    if self._uses_motion_library:
+      assert self._current_motion_frame is not None
+      return getattr(self._current_motion_frame, name)
+    assert self.motion is not None
+    return getattr(self.motion, name)[self.time_steps]
+
+  def _reference_body_tensor(self, name: str) -> torch.Tensor:
+    """Return the tracked-body slice of the current reference tensor."""
+    return self._reference_frame_tensor(name)[:, self.motion_body_indexes]
+
+  def _reference_single_body_tensor(self, name: str, body_index: int) -> torch.Tensor:
+    """Return the current reference tensor for one body index."""
+    return self._reference_frame_tensor(name)[:, body_index]
 
   @property
   def joint_pos(self) -> torch.Tensor:
-    if self._uses_motion_library:
-      assert self._current_motion_frame is not None
-      return self._current_motion_frame.joint_pos
-    assert self.motion is not None
-    return self.motion.joint_pos[self.time_steps]
+    return self._reference_frame_tensor("joint_pos")
 
   @property
   def joint_vel(self) -> torch.Tensor:
-    if self._uses_motion_library:
-      assert self._current_motion_frame is not None
-      return self._current_motion_frame.joint_vel
-    assert self.motion is not None
-    return self.motion.joint_vel[self.time_steps]
+    return self._reference_frame_tensor("joint_vel")
 
   @property
   def body_pos_w(self) -> torch.Tensor:
-    if self._uses_motion_library:
-      assert self._current_motion_frame is not None
-      return (
-        self._current_motion_frame.body_pos_w[:, self.motion_body_indexes]
-        + self._env.scene.env_origins[:, None, :]
-      )
-    assert self.motion is not None
-    selected = self.motion.body_pos_w[self.time_steps][:, self.motion_body_indexes]
-    return selected + self._env.scene.env_origins[:, None, :]
+    return (
+      self._reference_body_tensor("body_pos_w")
+      + self._env.scene.env_origins[:, None, :]
+    )
 
   @property
   def body_quat_w(self) -> torch.Tensor:
-    if self._uses_motion_library:
-      assert self._current_motion_frame is not None
-      return self._current_motion_frame.body_quat_w[:, self.motion_body_indexes]
-    assert self.motion is not None
-    return self.motion.body_quat_w[self.time_steps][:, self.motion_body_indexes]
+    return self._reference_body_tensor("body_quat_w")
 
   @property
   def body_lin_vel_w(self) -> torch.Tensor:
-    if self._uses_motion_library:
-      assert self._current_motion_frame is not None
-      return self._current_motion_frame.body_lin_vel_w[:, self.motion_body_indexes]
-    assert self.motion is not None
-    return self.motion.body_lin_vel_w[self.time_steps][:, self.motion_body_indexes]
+    return self._reference_body_tensor("body_lin_vel_w")
 
   @property
   def body_ang_vel_w(self) -> torch.Tensor:
-    if self._uses_motion_library:
-      assert self._current_motion_frame is not None
-      return self._current_motion_frame.body_ang_vel_w[:, self.motion_body_indexes]
-    assert self.motion is not None
-    return self.motion.body_ang_vel_w[self.time_steps][:, self.motion_body_indexes]
+    return self._reference_body_tensor("body_ang_vel_w")
 
   @property
   def anchor_pos_w(self) -> torch.Tensor:
-    if self._uses_motion_library:
-      assert self._current_motion_frame is not None
-      return (
-        self._current_motion_frame.body_pos_w[:, self.motion_anchor_body_index]
-        + self._env.scene.env_origins
-      )
-    assert self.motion is not None
     return (
-      self.motion.body_pos_w[self.time_steps, self.motion_anchor_body_index]
+      self._reference_single_body_tensor("body_pos_w", self.motion_anchor_body_index)
       + self._env.scene.env_origins
     )
 
   @property
   def anchor_quat_w(self) -> torch.Tensor:
-    if self._uses_motion_library:
-      assert self._current_motion_frame is not None
-      return self._current_motion_frame.body_quat_w[:, self.motion_anchor_body_index]
-    assert self.motion is not None
-    return self.motion.body_quat_w[self.time_steps, self.motion_anchor_body_index]
+    return self._reference_single_body_tensor(
+      "body_quat_w", self.motion_anchor_body_index
+    )
 
   @property
   def anchor_lin_vel_w(self) -> torch.Tensor:
-    if self._uses_motion_library:
-      assert self._current_motion_frame is not None
-      return self._current_motion_frame.body_lin_vel_w[:, self.motion_anchor_body_index]
-    assert self.motion is not None
-    return self.motion.body_lin_vel_w[self.time_steps, self.motion_anchor_body_index]
+    return self._reference_single_body_tensor(
+      "body_lin_vel_w", self.motion_anchor_body_index
+    )
 
   @property
   def anchor_ang_vel_w(self) -> torch.Tensor:
-    if self._uses_motion_library:
-      assert self._current_motion_frame is not None
-      return self._current_motion_frame.body_ang_vel_w[:, self.motion_anchor_body_index]
-    assert self.motion is not None
-    return self.motion.body_ang_vel_w[self.time_steps, self.motion_anchor_body_index]
+    return self._reference_single_body_tensor(
+      "body_ang_vel_w", self.motion_anchor_body_index
+    )
 
   @property
   def root_pos_w(self) -> torch.Tensor:
-    if self._uses_motion_library:
-      assert self._current_motion_frame is not None
-      return (
-        self._current_motion_frame.body_pos_w[:, self.motion_root_body_index]
-        + self._env.scene.env_origins
-      )
-    assert self.motion is not None
     return (
-      self.motion.body_pos_w[self.time_steps, self.motion_root_body_index]
+      self._reference_single_body_tensor("body_pos_w", self.motion_root_body_index)
       + self._env.scene.env_origins
     )
 
   @property
   def root_quat_w(self) -> torch.Tensor:
-    if self._uses_motion_library:
-      assert self._current_motion_frame is not None
-      return self._current_motion_frame.body_quat_w[:, self.motion_root_body_index]
-    assert self.motion is not None
-    return self.motion.body_quat_w[self.time_steps, self.motion_root_body_index]
+    return self._reference_single_body_tensor(
+      "body_quat_w", self.motion_root_body_index
+    )
 
   @property
   def root_lin_vel_w(self) -> torch.Tensor:
-    if self._uses_motion_library:
-      assert self._current_motion_frame is not None
-      return self._current_motion_frame.body_lin_vel_w[:, self.motion_root_body_index]
-    assert self.motion is not None
-    return self.motion.body_lin_vel_w[self.time_steps, self.motion_root_body_index]
+    return self._reference_single_body_tensor(
+      "body_lin_vel_w", self.motion_root_body_index
+    )
 
   @property
   def root_ang_vel_w(self) -> torch.Tensor:
-    if self._uses_motion_library:
-      assert self._current_motion_frame is not None
-      return self._current_motion_frame.body_ang_vel_w[:, self.motion_root_body_index]
-    assert self.motion is not None
-    return self.motion.body_ang_vel_w[self.time_steps, self.motion_root_body_index]
+    return self._reference_single_body_tensor(
+      "body_ang_vel_w", self.motion_root_body_index
+    )
 
   @property
   def robot_joint_pos(self) -> torch.Tensor:
@@ -568,16 +592,12 @@ class MotionCommand(CommandTerm):
     update_command(self)
 
   def _debug_vis_impl(self, visualizer: DebugVisualizer) -> None:
-    debug_visualize_motion_command(self, visualizer, _DESIRED_FRAME_COLORS)
-
-
-class JointRefMotionCommand(MotionCommand):
-  """Tracking-style command representation: [joint_pos_ref, joint_vel_ref]."""
+    debug_visualize_motion_command(self, visualizer)
 
 
 @dataclass(kw_only=True)
 class MotionCommandCfg(CommandTermCfg):
-  """Joint-ref motion command configuration (single-step command)."""
+  """Shared CLAMP motion command configuration options."""
 
   motion_file: str
   anchor_body_name: str
@@ -597,10 +617,14 @@ class MotionCommandCfg(CommandTermCfg):
 
   @dataclass
   class VizCfg:
-    mode: Literal["ghost", "frames"] = "ghost"
+    """Debug-visualization configuration for motion commands."""
+
+    mode: Literal["ghost"] = "ghost"
     ghost_color: tuple[float, float, float, float] = (0.5, 0.7, 0.5, 0.5)
 
   viz: VizCfg = field(default_factory=VizCfg)
 
   def build(self, env: ManagerBasedRlEnv) -> MotionCommand:
-    return JointRefMotionCommand(self, env)
+    raise NotImplementedError(
+      f"{self.__class__.__name__} must implement build() for a concrete motion command."
+    )

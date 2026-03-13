@@ -50,11 +50,23 @@ class Args:
 
 
 def _default_input_root() -> Path:
-  return Path(__file__).resolve().parents[5] / "assets" / "motions" / "clamp" / "g1_motions_pkls"
+  return (
+    Path(__file__).resolve().parents[5]
+    / "assets"
+    / "motions"
+    / "clamp"
+    / "g1_motions_pkls"
+  )
 
 
 def _default_output_root() -> Path:
-  return Path(__file__).resolve().parents[5] / "assets" / "motions" / "clamp" / "g1_motions_npz"
+  return (
+    Path(__file__).resolve().parents[5]
+    / "assets"
+    / "motions"
+    / "clamp"
+    / "g1_motions_npz"
+  )
 
 
 def _parse_args() -> Args:
@@ -212,7 +224,9 @@ def _joint_qpos_indices(model: mujoco.MjModel) -> tuple[int, list[int]]:
   return free_joint_qadr, sorted(joint_q_indices)
 
 
-def _robot_body_ids_and_names(model: mujoco.MjModel) -> tuple[list[int], tuple[str, ...]]:
+def _robot_body_ids_and_names(
+  model: mujoco.MjModel,
+) -> tuple[list[int], tuple[str, ...]]:
   body_ids: list[int] = []
   body_names: list[str] = []
   for bid in range(model.nbody):
@@ -367,7 +381,9 @@ def main() -> None:
         converted += 1
       else:
         skipped += 1
-      progress.set_postfix_str(f"converted={converted} skipped={skipped} failed={failed}")
+      progress.set_postfix_str(
+        f"converted={converted} skipped={skipped} failed={failed}"
+      )
       if msg != "ok":
         tqdm.write(f"{pkl_path}: {msg}")
     except Exception as exc:  # noqa: BLE001

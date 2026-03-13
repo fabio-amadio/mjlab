@@ -1,3 +1,5 @@
+"""Sampling, reset, and per-step update helpers for CLAMP motion commands."""
+
 from __future__ import annotations
 
 import math
@@ -15,11 +17,11 @@ from mjlab.utils.lab_api.math import (
 )
 
 if TYPE_CHECKING:
-  from .motion_command import MotionCommand
+  from .base import MotionCommand
 
 
 def _max_future_offset_steps(command: MotionCommand) -> int:
-  offsets = getattr(command.cfg, "command_step_offsets", ())
+  offsets = command.future_sampling_step_offsets
   if not isinstance(offsets, tuple) or len(offsets) == 0:
     return 0
   return max(int(offset) for offset in offsets)
@@ -35,13 +37,16 @@ def _sample_motion_ids_with_horizon(command: MotionCommand, n: int) -> torch.Ten
   horizon_s = _future_horizon_s(command)
   valid_mask = command.motion_lib.motion_lengths_s > (horizon_s + 1.0e-6)
   if torch.any(valid_mask):
-    prob = command.motion_lib.motion_weights * valid_mask.to(command.motion_lib.motion_weights.dtype)
+    prob = command.motion_lib.motion_weights * valid_mask.to(
+      command.motion_lib.motion_weights.dtype
+    )
     prob = prob / torch.clamp(prob.sum(), min=1.0e-8)
     return torch.multinomial(prob, num_samples=n, replacement=True)
   return command.motion_lib.sample_motions(n)
 
 
 def adaptive_sampling(command: MotionCommand, env_ids: torch.Tensor) -> None:
+  """Resample environments using failure-weighted adaptive motion probabilities."""
   if command._uses_motion_library:
     assert command.motion_lib is not None
     assert command.motion_failed_count is not None
@@ -59,7 +64,9 @@ def adaptive_sampling(command: MotionCommand, env_ids: torch.Tensor) -> None:
       failed_times = command._current_times_s()[failed_env_ids]
       failed_lengths = command.motion_lib.get_motion_length(failed_motion_ids)
       failed_phase_bins = torch.clamp(
-        (failed_times / torch.clamp(failed_lengths, min=1.0e-6) * command.bin_count).long(),
+        (
+          failed_times / torch.clamp(failed_lengths, min=1.0e-6) * command.bin_count
+        ).long(),
         0,
         command.bin_count - 1,
       )
@@ -67,17 +74,23 @@ def adaptive_sampling(command: MotionCommand, env_ids: torch.Tensor) -> None:
         failed_motion_ids, minlength=command.motion_lib.num_motions()
       ).to(dtype=torch.float32)
       phase_flat_idx = failed_motion_ids * command.bin_count + failed_phase_bins
-      command._current_phase_failed[:] = torch.bincount(
-        phase_flat_idx,
-        minlength=command.motion_lib.num_motions() * command.bin_count,
-      ).to(dtype=torch.float32).reshape(command.motion_lib.num_motions(), command.bin_count)
+      command._current_phase_failed[:] = (
+        torch.bincount(
+          phase_flat_idx,
+          minlength=command.motion_lib.num_motions() * command.bin_count,
+        )
+        .to(dtype=torch.float32)
+        .reshape(command.motion_lib.num_motions(), command.bin_count)
+      )
 
     mix_ratio = float(min(max(command.cfg.adaptive_uniform_ratio, 0.0), 1.0))
-    hard_motion_prob = command.motion_failed_count + 1.0 / float(command.motion_lib.num_motions())
+    hard_motion_prob = command.motion_failed_count + 1.0 / float(
+      command.motion_lib.num_motions()
+    )
     hard_motion_prob = hard_motion_prob / hard_motion_prob.sum()
     motion_probabilities = (
-      (1.0 - mix_ratio) * hard_motion_prob + mix_ratio * command.motion_lib.motion_weights
-    )
+      1.0 - mix_ratio
+    ) * hard_motion_prob + mix_ratio * command.motion_lib.motion_weights
     horizon_s = _future_horizon_s(command)
     valid_mask = (command.motion_lib.motion_lengths_s > (horizon_s + 1.0e-6)).to(
       motion_probabilities.dtype
@@ -99,10 +112,12 @@ def adaptive_sampling(command: MotionCommand, env_ids: torch.Tensor) -> None:
       hard_phase_prob.sum(dim=1, keepdim=True), min=1.0e-8
     )
 
-    uniform_phase_prob = torch.full_like(hard_phase_prob, 1.0 / float(command.bin_count))
-    phase_probabilities = (
-      (1.0 - mix_ratio) * hard_phase_prob + mix_ratio * uniform_phase_prob
+    uniform_phase_prob = torch.full_like(
+      hard_phase_prob, 1.0 / float(command.bin_count)
     )
+    phase_probabilities = (
+      1.0 - mix_ratio
+    ) * hard_phase_prob + mix_ratio * uniform_phase_prob
     phase_probabilities = phase_probabilities / torch.clamp(
       phase_probabilities.sum(dim=1, keepdim=True), min=1.0e-8
     )
@@ -111,7 +126,9 @@ def adaptive_sampling(command: MotionCommand, env_ids: torch.Tensor) -> None:
       motion_probabilities, len(env_ids), replacement=True
     )
     sampled_phase_prob = phase_probabilities[sampled_motion_ids]
-    sampled_bins = torch.multinomial(sampled_phase_prob, 1, replacement=True).squeeze(-1)
+    sampled_bins = torch.multinomial(sampled_phase_prob, 1, replacement=True).squeeze(
+      -1
+    )
     sampled_phase = (
       sampled_bins + sample_uniform(0.0, 1.0, (len(env_ids),), device=command.device)
     ) / command.bin_count
@@ -151,7 +168,9 @@ def adaptive_sampling(command: MotionCommand, env_ids: torch.Tensor) -> None:
     )
     command.metrics["sampling_phase_entropy"][:] = phase_entropy
     command.metrics["sampling_phase_top1_prob"][:] = phase_top_prob
-    command.metrics["sampling_phase_top1_bin"][:] = phase_top_idx.float() / command.bin_count
+    command.metrics["sampling_phase_top1_bin"][:] = (
+      phase_top_idx.float() / command.bin_count
+    )
     command.metrics["sampling_entropy"][:] = 0.5 * (motion_entropy + phase_entropy)
     command.metrics["sampling_top1_prob"][:] = motion_top_prob * phase_top_prob
     command.metrics["sampling_top1_bin"][:] = phase_top_idx.float() / command.bin_count
@@ -164,15 +183,19 @@ def adaptive_sampling(command: MotionCommand, env_ids: torch.Tensor) -> None:
   command._current_bin_failed.zero_()
   if torch.any(episode_failed):
     current_bin_index = torch.clamp(
-      (command.time_steps * command.bin_count) // max(command.motion.time_step_total, 1),
+      (command.time_steps * command.bin_count)
+      // max(command.motion.time_step_total, 1),
       0,
       command.bin_count - 1,
     )
     fail_bins = current_bin_index[env_ids][episode_failed]
-    command._current_bin_failed[:] = torch.bincount(fail_bins, minlength=command.bin_count)
+    command._current_bin_failed[:] = torch.bincount(
+      fail_bins, minlength=command.bin_count
+    )
 
   sampling_probabilities = (
-    command.bin_failed_count + command.cfg.adaptive_uniform_ratio / float(command.bin_count)
+    command.bin_failed_count
+    + command.cfg.adaptive_uniform_ratio / float(command.bin_count)
   )
   sampling_probabilities = torch.nn.functional.pad(
     sampling_probabilities.unsqueeze(0).unsqueeze(0),
@@ -192,8 +215,12 @@ def adaptive_sampling(command: MotionCommand, env_ids: torch.Tensor) -> None:
     / command.bin_count
     * (command.motion.time_step_total - 1)
   ).long()
-  max_start_idx = max(command.motion.time_step_total - 1 - _max_future_offset_steps(command), 0)
-  command.time_steps[env_ids] = torch.clamp(command.time_steps[env_ids], max=max_start_idx)
+  max_start_idx = max(
+    command.motion.time_step_total - 1 - _max_future_offset_steps(command), 0
+  )
+  command.time_steps[env_ids] = torch.clamp(
+    command.time_steps[env_ids], max=max_start_idx
+  )
 
   H = -(sampling_probabilities * (sampling_probabilities + 1e-12).log()).sum()
   H_norm = H / math.log(command.bin_count)
@@ -210,6 +237,7 @@ def adaptive_sampling(command: MotionCommand, env_ids: torch.Tensor) -> None:
 
 
 def uniform_sampling(command: MotionCommand, env_ids: torch.Tensor) -> None:
+  """Resample environments uniformly over clips/phases within the valid horizon."""
   if command._uses_motion_library:
     assert command.motion_lib is not None
     sampled_motion_ids = _sample_motion_ids_with_horizon(command, len(env_ids))
@@ -241,7 +269,9 @@ def uniform_sampling(command: MotionCommand, env_ids: torch.Tensor) -> None:
     command.metrics["sampling_phase_top1_bin"][:] = 0.5
   else:
     assert command.motion is not None
-    max_start_idx = max(command.motion.time_step_total - 1 - _max_future_offset_steps(command), 0)
+    max_start_idx = max(
+      command.motion.time_step_total - 1 - _max_future_offset_steps(command), 0
+    )
     command.time_steps[env_ids] = torch.randint(
       0, max_start_idx + 1, (len(env_ids),), device=command.device
     )
@@ -258,10 +288,13 @@ def uniform_sampling(command: MotionCommand, env_ids: torch.Tensor) -> None:
 
 
 def resample_command(command: MotionCommand, env_ids: torch.Tensor) -> None:
+  """Resample command state and write the randomized reference state to sim."""
   if command.cfg.sampling_mode == "start":
     if command._uses_motion_library:
       assert command.motion_lib is not None
-      command.motion_ids[env_ids] = _sample_motion_ids_with_horizon(command, len(env_ids))
+      command.motion_ids[env_ids] = _sample_motion_ids_with_horizon(
+        command, len(env_ids)
+      )
       command.motion_time_offsets[env_ids] = 0.0
     command.time_steps[env_ids] = 0
     if command._uses_motion_library:
@@ -315,7 +348,9 @@ def resample_command(command: MotionCommand, env_ids: torch.Tensor) -> None:
   joint_pos[env_ids] = torch.clip(
     joint_pos[env_ids], soft_joint_pos_limits[:, :, 0], soft_joint_pos_limits[:, :, 1]
   )
-  command.robot.write_joint_state_to_sim(joint_pos[env_ids], joint_vel[env_ids], env_ids=env_ids)
+  command.robot.write_joint_state_to_sim(
+    joint_pos[env_ids], joint_vel[env_ids], env_ids=env_ids
+  )
 
   root_state = torch.cat(
     [
@@ -331,6 +366,7 @@ def resample_command(command: MotionCommand, env_ids: torch.Tensor) -> None:
 
 
 def update_command(command: MotionCommand) -> None:
+  """Advance motion time, resample expired references, and refresh metrics."""
   command.time_steps += 1
 
   resample_env_ids: torch.Tensor
@@ -356,8 +392,12 @@ def update_command(command: MotionCommand) -> None:
     assert command.motion is not None
     command.time_steps.clamp_(max=command.motion.time_step_total - 1)
 
-  anchor_pos_w_repeat = command.anchor_pos_w[:, None, :].repeat(1, len(command.cfg.body_names), 1)
-  anchor_quat_w_repeat = command.anchor_quat_w[:, None, :].repeat(1, len(command.cfg.body_names), 1)
+  anchor_pos_w_repeat = command.anchor_pos_w[:, None, :].repeat(
+    1, len(command.cfg.body_names), 1
+  )
+  anchor_quat_w_repeat = command.anchor_quat_w[:, None, :].repeat(
+    1, len(command.cfg.body_names), 1
+  )
   robot_anchor_pos_w_repeat = command.robot_anchor_pos_w[:, None, :].repeat(
     1, len(command.cfg.body_names), 1
   )
@@ -367,7 +407,9 @@ def update_command(command: MotionCommand) -> None:
 
   delta_pos_w = robot_anchor_pos_w_repeat
   delta_pos_w[..., 2] = anchor_pos_w_repeat[..., 2]
-  delta_ori_w = yaw_quat(quat_mul(robot_anchor_quat_w_repeat, quat_inv(anchor_quat_w_repeat)))
+  delta_ori_w = yaw_quat(
+    quat_mul(robot_anchor_quat_w_repeat, quat_inv(anchor_quat_w_repeat))
+  )
 
   command.body_quat_relative_w = quat_mul(delta_ori_w, command.body_quat_w)
   command.body_pos_relative_w = delta_pos_w + quat_apply(

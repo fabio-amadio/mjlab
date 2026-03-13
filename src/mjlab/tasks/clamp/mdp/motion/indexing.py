@@ -1,10 +1,12 @@
+"""Body-name resolution and indexing helpers for CLAMP motion sources."""
+
 from __future__ import annotations
 
 import warnings
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-  from .motion_command import MotionCommand
+  from .base import MotionCommand
 
 
 def resolve_motion_body_names(command: MotionCommand) -> tuple[str, ...]:

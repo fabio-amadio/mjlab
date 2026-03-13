@@ -2,13 +2,13 @@ from mjlab.rl.config import RslRlBaseRunnerCfg as RslRlBaseRunnerCfg
 from mjlab.rl.config import (
   RslRlDistillationAlgorithmCfg as RslRlDistillationAlgorithmCfg,
 )
-from mjlab.rl.config import RslRlDistillPpoAlgorithmCfg as RslRlDistillPpoAlgorithmCfg
 from mjlab.rl.config import (
   RslRlDistillationRunnerCfg as RslRlDistillationRunnerCfg,
 )
 from mjlab.rl.config import (
   RslRlDistillationStudentTeacherCfg as RslRlDistillationStudentTeacherCfg,
 )
+from mjlab.rl.config import RslRlDistillPpoAlgorithmCfg as RslRlDistillPpoAlgorithmCfg
 from mjlab.rl.config import RslRlOnPolicyRunnerCfg as RslRlOnPolicyRunnerCfg
 from mjlab.rl.config import RslRlPpoActorCriticCfg as RslRlPpoActorCriticCfg
 from mjlab.rl.config import RslRlPpoAlgorithmCfg as RslRlPpoAlgorithmCfg

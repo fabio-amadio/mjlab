@@ -27,8 +27,8 @@ import tyro
 
 from mjlab.envs import ManagerBasedRlEnv
 from mjlab.rl import RslRlVecEnvWrapper
-from mjlab.tasks.clamp.mdp.motion_command import MotionCommand
-from mjlab.tasks.clamp.mdp.motion_library import NpzMotionLibrary
+from mjlab.tasks.clamp.mdp import MotionCommand
+from mjlab.tasks.clamp.mdp.motion.library import NpzMotionLibrary
 from mjlab.tasks.registry import load_env_cfg, load_rl_cfg
 from mjlab.viewer import NativeMujocoViewer, ViserPlayViewer
 
@@ -36,10 +36,18 @@ _DEFAULT_NPZ_MOTION_SOURCE = str(
   Path(__file__).resolve().parents[1] / "config" / "g1" / "motion_data_cfg.yaml"
 )
 _DEFAULT_NPZ_ROOT = str(
-  Path(__file__).resolve().parents[5] / "assets" / "motions" / "clamp" / "g1_motions_npz"
+  Path(__file__).resolve().parents[5]
+  / "assets"
+  / "motions"
+  / "clamp"
+  / "g1_motions_npz"
 )
 _DEFAULT_PKL_ROOT = str(
-  Path(__file__).resolve().parents[5] / "assets" / "motions" / "clamp" / "g1_motions_pkl"
+  Path(__file__).resolve().parents[5]
+  / "assets"
+  / "motions"
+  / "clamp"
+  / "g1_motions_pkl"
 )
 
 
@@ -141,7 +149,9 @@ def _load_pkl_clip(
 
   fps = float(data.get("fps", 30.0))
   root_rot_wxyz = _normalize_quat_wxyz(_to_wxyz(root_rot, quat_convention))
-  return _PklClip(root_pos=root_pos, root_rot_wxyz=root_rot_wxyz, dof_pos=dof_pos, fps=fps)
+  return _PklClip(
+    root_pos=root_pos, root_rot_wxyz=root_rot_wxyz, dof_pos=dof_pos, fps=fps
+  )
 
 
 def _interp_clip(clip: _PklClip, t: float) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
@@ -158,7 +168,9 @@ def _interp_clip(clip: _PklClip, t: float) -> tuple[np.ndarray, np.ndarray, np.n
   blend = phase * (clip.num_frames - 1) - idx0
 
   root_pos = (1.0 - blend) * clip.root_pos[idx0] + blend * clip.root_pos[idx1]
-  root_rot = _slerp_wxyz(clip.root_rot_wxyz[idx0], clip.root_rot_wxyz[idx1], float(blend))
+  root_rot = _slerp_wxyz(
+    clip.root_rot_wxyz[idx0], clip.root_rot_wxyz[idx1], float(blend)
+  )
   dof_pos = (1.0 - blend) * clip.dof_pos[idx0] + blend * clip.dof_pos[idx1]
   return root_pos, root_rot, dof_pos
 
@@ -290,10 +302,14 @@ def run(cfg: CompareGhostsConfig) -> None:
       root_pos, root_rot, dof_pos = _interp_clip(clip, t)
 
       qpos = np.zeros(self._env.sim.mj_model.nq, dtype=np.float64)
-      qpos[free_joint_q_adr[0:3]] = root_pos + self._env.scene.env_origins[env_id].cpu().numpy()
+      qpos[free_joint_q_adr[0:3]] = (
+        root_pos + self._env.scene.env_origins[env_id].cpu().numpy()
+      )
       qpos[free_joint_q_adr[3:7]] = root_rot
       qpos[joint_q_adr] = dof_pos
-      visualizer.add_ghost_mesh(qpos, model=pkl_ghost_model, label=f"pkl_ghost_{env_id}")
+      visualizer.add_ghost_mesh(
+        qpos, model=pkl_ghost_model, label=f"pkl_ghost_{env_id}"
+      )
 
   command._debug_vis_impl = MethodType(_debug_vis_compare, command)
 

@@ -108,7 +108,9 @@ class ClampStudentTeacherDistill(nn.Module):
     Normal.set_default_validate_args(False)
 
   @staticmethod
-  def _infer_obs_dim(obs: Mapping[str, torch.Tensor], group_names: Sequence[str]) -> int:
+  def _infer_obs_dim(
+    obs: Mapping[str, torch.Tensor], group_names: Sequence[str]
+  ) -> int:
     total = 0
     for group_name in group_names:
       assert len(obs[group_name].shape) == 2, "Only 1D observations are supported."
@@ -234,9 +236,7 @@ class ClampStudentTeacherDistill(nn.Module):
 
     incompatible = self.teacher.load_state_dict(actor_state_dict, strict=False)
     remaining_actor_missing = [
-      key
-      for key in incompatible.missing_keys
-      if key in required_actor_keys
+      key for key in incompatible.missing_keys if key in required_actor_keys
     ]
     if len(remaining_actor_missing) > 0:
       raise ValueError(
