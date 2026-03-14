@@ -8,6 +8,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Literal, cast
 
+import torch
 import tyro
 
 from mjlab.envs import ManagerBasedRlEnv, ManagerBasedRlEnvCfg
@@ -32,6 +33,8 @@ class TrainConfig:
   enable_nan_guard: bool = False
   torchrunx_log_dir: str | None = None
   wandb_run_path: str | None = None
+  init_checkpoint_file: str | None = None
+  init_wandb_run_path: str | None = None
   gpu_ids: list[int] | Literal["all"] | None = field(default_factory=lambda: [0])
 
   @staticmethod
@@ -101,6 +104,15 @@ def run_train(task_id: str, cfg: TrainConfig, log_dir: Path) -> None:
 
   log_root_path = log_dir.parent  # Go up from specific run dir to experiment dir.
 
+  if cfg.agent.resume and (
+    cfg.init_checkpoint_file is not None or cfg.init_wandb_run_path is not None
+  ):
+    raise ValueError(
+      "Checkpoint initialization and `agent.resume=True` are mutually exclusive. "
+      "Use init_* for a fresh run from pretrained weights, or resume to continue "
+      "an existing run."
+    )
+
   resume_path: Path | None = None
   if cfg.agent.resume:
     if cfg.wandb_run_path is not None:
@@ -120,6 +132,24 @@ def run_train(task_id: str, cfg: TrainConfig, log_dir: Path) -> None:
       # Load checkpoint from local filesystem.
       resume_path = get_checkpoint_path(
         log_root_path, cfg.agent.load_run, cfg.agent.load_checkpoint
+      )
+
+  init_path: Path | None = None
+  if cfg.init_checkpoint_file is not None:
+    init_path = Path(cfg.init_checkpoint_file).expanduser().resolve()
+    if not init_path.exists():
+      raise FileNotFoundError(f"Initialization checkpoint not found: {init_path}")
+  elif cfg.init_wandb_run_path is not None:
+    init_path, was_cached = get_wandb_checkpoint_path(
+      log_root_path, Path(cfg.init_wandb_run_path)
+    )
+    if rank == 0:
+      run_id = init_path.parent.name
+      checkpoint_name = init_path.name
+      cached_str = "cached" if was_cached else "downloaded"
+      print(
+        f"[INFO]: Initializing model from W&B checkpoint: {checkpoint_name} "
+        f"(run: {run_id}, {cached_str})"
       )
 
   # Only record videos on rank 0 to avoid multiple workers writing to the same files.
@@ -153,6 +183,10 @@ def run_train(task_id: str, cfg: TrainConfig, log_dir: Path) -> None:
   if resume_path is not None:
     print(f"[INFO]: Loading model checkpoint from: {resume_path}")
     runner.load(str(resume_path))
+  elif init_path is not None:
+    print(f"[INFO]: Initializing policy from checkpoint: {init_path}")
+    loaded_dict = torch.load(init_path, weights_only=False, map_location=device)
+    runner.alg.policy.load_state_dict(loaded_dict["model_state_dict"])
 
   # Only write config files from rank 0 to avoid race conditions.
   if rank == 0:
