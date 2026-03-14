@@ -57,11 +57,11 @@
     <link rel="icon" href="../_static/favicon.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="NaN Guard" href="nan_guard.html" />
-    <link rel="prev" title="mjlab.terrains" href="api/terrains.html" />
+    <link rel="next" title="Curriculum" href="curriculum.html" />
+    <link rel="prev" title="Events" href="events.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-    <meta name="docbuild:last-update" content="Feb 24, 2026"/>
+    <meta name="docbuild:last-update" content="Mar 14, 2026"/>
   </head>
   
   
@@ -147,7 +147,7 @@
   
   
   
-    <p class="title logo__title">The mjlab Documentation</p>
+    <p class="title logo__title">mjlab Documentation</p>
   
 </a></div>
         <div class="sidebar-primary-item">
@@ -178,17 +178,55 @@
 </div>
         <div class="sidebar-primary-item"><nav class="bd-links bd-docs-nav" aria-label="Main">
     <div class="bd-toc-item navbar-nav active">
-        <p aria-level="2" class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+        <p aria-level="2" class="caption" role="heading"><span class="caption-text">User Guide</span></p>
 <ul class="nav bd-sidenav">
 <li class="toctree-l1"><a class="reference internal" href="installation.html">Installation Guide</a></li>
-<li class="toctree-l1"><a class="reference internal" href="migration_isaac_lab.html">Migrating from Isaac Lab</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="tutorials.html">Tutorials</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="tutorials/cartpole.html">Cartpole: Building Your First Environment</a></li>
 </ul>
-<p aria-level="2" class="caption" role="heading"><span class="caption-text">About the Project</span></p>
-<ul class="nav bd-sidenav">
-<li class="toctree-l1"><a class="reference internal" href="motivation.html">Why mjlab?</a></li>
-<li class="toctree-l1"><a class="reference internal" href="faq.html">FAQ &amp; Troubleshooting</a></li>
+</details></li>
 <li class="toctree-l1"><a class="reference internal" href="contributing.html">Contributing</a></li>
-<li class="toctree-l1"><a class="reference internal" href="changelog.html">Changelog</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Concepts</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="architecture_overview.html">Architecture Overview</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="entity/index.html">Entity</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="entity/entity_data.html">Entity Data</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1"><a class="reference internal" href="actuators.html">Actuators</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="sensors/index.html">Sensors</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="sensors/raycast_sensor.html">RayCast Sensor</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sensors/rgbd_camera.html">RGB-D Camera</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1"><a class="reference internal" href="scene.html">Scene</a></li>
+<li class="toctree-l1"><a class="reference internal" href="terrain.html">Terrain</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">The Manager Layer</span></p>
+<ul class="current nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="environment_config.html">Environment Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="observations.html">Observations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="actions.html">Actions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="rewards.html">Rewards</a></li>
+<li class="toctree-l1"><a class="reference internal" href="terminations.html">Terminations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="commands.html">Commands</a></li>
+<li class="toctree-l1"><a class="reference internal" href="events.html">Events</a></li>
+<li class="toctree-l1 current active"><a class="current reference internal" href="#">Domain Randomization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="curriculum.html">Curriculum</a></li>
+<li class="toctree-l1"><a class="reference internal" href="metrics.html">Metrics</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Training &amp; Debugging</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1 has-children"><a class="reference internal" href="training/rsl_rl.html">Training with RSL-RL</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="training/motion_imitation.html">Motion Imitation</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1"><a class="reference internal" href="viewers.html">Viewers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="training/distributed_training.html">Distributed Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="training/cloud.html">Cloud Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="debugging/nan_guard.html">NaN Guard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="debugging/export_scene.html">Export Scene</a></li>
 </ul>
 <p aria-level="2" class="caption" role="heading"><span class="caption-text">API Reference</span></p>
 <ul class="nav bd-sidenav">
@@ -201,18 +239,19 @@
 <li class="toctree-l2"><a class="reference internal" href="api/sensor.html">mjlab.sensor</a></li>
 <li class="toctree-l2"><a class="reference internal" href="api/managers.html">mjlab.managers</a></li>
 <li class="toctree-l2"><a class="reference internal" href="api/terrains.html">mjlab.terrains</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/rl.html">mjlab.rl</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/viewer.html">mjlab.viewer</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/tasks.html">mjlab.tasks</a></li>
 </ul>
 </details></li>
 </ul>
-<p aria-level="2" class="caption" role="heading"><span class="caption-text">Core Concepts</span></p>
-<ul class="current nav bd-sidenav">
-<li class="toctree-l1 current active"><a class="current reference internal" href="#">Domain Randomization</a></li>
-<li class="toctree-l1"><a class="reference internal" href="nan_guard.html">NaN Guard</a></li>
-<li class="toctree-l1"><a class="reference internal" href="observation.html">Observation History and Delay</a></li>
-<li class="toctree-l1"><a class="reference internal" href="actuators.html">Actuators</a></li>
-<li class="toctree-l1"><a class="reference internal" href="sensors.html">Sensors</a></li>
-<li class="toctree-l1"><a class="reference internal" href="raycast_sensor.html">RayCast Sensor</a></li>
-<li class="toctree-l1"><a class="reference internal" href="distributed_training.html">Distributed Training</a></li>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Further Reading</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="motivation.html">Why mjlab?</a></li>
+<li class="toctree-l1"><a class="reference internal" href="migration_isaac_lab.html">Migrating from Isaac Lab</a></li>
+<li class="toctree-l1"><a class="reference internal" href="faq.html">FAQ &amp; Troubleshooting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="research.html">Research</a></li>
+<li class="toctree-l1"><a class="reference internal" href="changelog.html">Changelog</a></li>
 </ul>
 
     </div>
@@ -485,10 +524,10 @@ document.write(`
                 <article class="bd-article">
                   
   <section id="domain-randomization">
-<h1>Domain Randomization<a class="headerlink" href="#domain-randomization" title="Link to this heading">#</a></h1>
+<span id="id1"></span><h1>Domain Randomization<a class="headerlink" href="#domain-randomization" title="Link to this heading">#</a></h1>
 <p>Domain randomization varies physical parameters during training so that policies
 are robust to modeling errors and real-world variation. This guide shows
-how to attach randomization terms to your environment using <code class="docutils literal notranslate"><span class="pre">EventTermCfg</span></code> and
+how to attach randomization terms to an environment using <code class="docutils literal notranslate"><span class="pre">EventTermCfg</span></code> and
 the <code class="docutils literal notranslate"><span class="pre">dr</span></code> module.</p>
 <section id="quick-start">
 <h2>Quick Start<a class="headerlink" href="#quick-start" title="Link to this heading">#</a></h2>
@@ -1179,7 +1218,7 @@ come from vertex data or are infinite, not derivable from <code class="docutils 
 <section id="added-as-needed">
 <h4>Added as needed<a class="headerlink" href="#added-as-needed" title="Link to this heading">#</a></h4>
 <p>These continuous model fields could use a standard <code class="docutils literal notranslate"><span class="pre">dr.*</span></code> function but
-don’t have one yet. We will add them as demand arises.</p>
+do not have one yet. They will be added as demand arises.</p>
 <div class="pst-scrollable-table-container"><table class="table">
 <colgroup>
 <col style="width: 20.0%" />
@@ -1234,7 +1273,7 @@ is not yet implemented.</p></td>
 more misleading than helpful. For example, <code class="docutils literal notranslate"><span class="pre">solref</span></code> is interpreted
 differently depending on the solver type (elliptic vs. direct), <code class="docutils literal notranslate"><span class="pre">solimp</span></code>
 has ordering constraints (dmin &lt; dmax, width &gt; 0), and <code class="docutils literal notranslate"><span class="pre">qpos_spring</span></code> is
-coupled with <code class="docutils literal notranslate"><span class="pre">qpos0</span></code>. The right ranges depend on your specific modeling
+coupled with <code class="docutils literal notranslate"><span class="pre">qpos0</span></code>. The right ranges depend on the specific modeling
 choices. Write a custom event term instead (see
 <a class="reference internal" href="#dr-custom-event-terms"><span class="std std-ref">Custom Class-Based Event Terms</span></a> or use
 <code class="docutils literal notranslate"><span class="pre">&#64;requires_model_fields</span></code> to handle field expansion automatically).</p>
@@ -1339,7 +1378,7 @@ their own signatures; see their docstrings for details.)</p>
 <section id="distribution">
 <h3>Distribution<a class="headerlink" href="#distribution" title="Link to this heading">#</a></h3>
 <p>The <code class="docutils literal notranslate"><span class="pre">distribution</span></code> parameter controls how random values are sampled from
-the provided <code class="docutils literal notranslate"><span class="pre">ranges</span></code>. You can pass a built-in string or a
+the provided <code class="docutils literal notranslate"><span class="pre">ranges</span></code>. It accepts a built-in string or a
 <code class="docutils literal notranslate"><span class="pre">dr.Distribution</span></code> instance for custom sampling logic.</p>
 <div class="pst-scrollable-table-container"><table class="table">
 <colgroup>
@@ -1391,7 +1430,7 @@ bounds:</p>
 <section id="operation">
 <h3>Operation<a class="headerlink" href="#operation" title="Link to this heading">#</a></h3>
 <p>The <code class="docutils literal notranslate"><span class="pre">operation</span></code> parameter controls how the sampled value is applied to the
-model field. You can pass a built-in string or a <code class="docutils literal notranslate"><span class="pre">dr.Operation</span></code> instance
+model field. It accepts a built-in string or a <code class="docutils literal notranslate"><span class="pre">dr.Operation</span></code> instance
 for custom logic.</p>
 <div class="pst-scrollable-table-container"><table class="table">
 <colgroup>
@@ -1466,7 +1505,7 @@ parameters should slowly wander over time:</p>
 <h3>Axis selection<a class="headerlink" href="#axis-selection" title="Link to this heading">#</a></h3>
 <p>Many model fields are multi-dimensional. For example, <code class="docutils literal notranslate"><span class="pre">geom_friction</span></code> has
 three components <code class="docutils literal notranslate"><span class="pre">[tangential,</span> <span class="pre">torsional,</span> <span class="pre">rolling]</span></code> and <code class="docutils literal notranslate"><span class="pre">body_pos</span></code> has
-three spatial axes <code class="docutils literal notranslate"><span class="pre">[x,</span> <span class="pre">y,</span> <span class="pre">z]</span></code>. You can target specific axes using the
+three spatial axes <code class="docutils literal notranslate"><span class="pre">[x,</span> <span class="pre">y,</span> <span class="pre">z]</span></code>. Specific axes can be targeted using the
 <code class="docutils literal notranslate"><span class="pre">axes</span></code> parameter or by passing a dict for <code class="docutils literal notranslate"><span class="pre">ranges</span></code>.</p>
 <p>For <code class="docutils literal notranslate"><span class="pre">geom_friction</span></code> with <code class="docutils literal notranslate"><span class="pre">condim=3</span></code> (standard frictional contact), only
 <strong>axis 0 (tangential)</strong> affects contact behavior. See the <a class="reference external" href="https://mujoco.readthedocs.io/en/stable/computation/index.html#contact">MuJoCo contact
@@ -1485,7 +1524,7 @@ for details on condim and friction coefficients.</p>
 </section>
 <section id="per-component-string-keyed-ranges">
 <h3>Per-component string-keyed ranges<a class="headerlink" href="#per-component-string-keyed-ranges" title="Link to this heading">#</a></h3>
-<p>You can apply different ranges to different entities in a single call using
+<p>Different ranges can be applied to different entities in a single call using
 regex patterns as dict keys:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">dr</span><span class="o">.</span><span class="n">joint_damping</span><span class="p">(</span>
     <span class="n">env</span><span class="p">,</span> <span class="n">env_ids</span><span class="p">,</span>
@@ -1518,8 +1557,8 @@ get a tighter 0.8x to 1.2x range, all in a single event term.</p>
 </div>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>Give your robot’s collision geoms higher <strong>priority</strong> than terrain
-(geom priority defaults to 0). Then you only need to randomize robot
+<p>Give the robot’s collision geoms higher <strong>priority</strong> than terrain
+(geom priority defaults to 0). Then only robot
 friction. MuJoCo will use the higher-priority geom’s friction in
 (robot, terrain) contacts.</p>
 </div>
@@ -1600,7 +1639,7 @@ Each call independently samples a new perturbation from the default orientation.
 <h3><code class="docutils literal notranslate"><span class="pre">dr.geom_friction</span></code> only randomizes tangential friction by default<a class="headerlink" href="#dr-geom-friction-only-randomizes-tangential-friction-by-default" title="Link to this heading">#</a></h3>
 <p>The default axis is 0 (tangential friction). Axes 1 (torsional) and 2
 (rolling) only affect contacts with <code class="docutils literal notranslate"><span class="pre">condim</span> <span class="pre">&gt;=</span> <span class="pre">4</span></code>, so the default is correct
-for standard <code class="docutils literal notranslate"><span class="pre">condim=3</span></code> contacts. If your model uses high-dimensional
+for standard <code class="docutils literal notranslate"><span class="pre">condim=3</span></code> contacts. If the model uses high-dimensional
 contacts, pass <code class="docutils literal notranslate"><span class="pre">axes=[0,</span> <span class="pre">1,</span> <span class="pre">2]</span></code> explicitly.</p>
 </section>
 <section id="dr-geom-size-raises-on-non-primitive-geoms">
@@ -1608,7 +1647,7 @@ contacts, pass <code class="docutils literal notranslate"><span class="pre">axes
 <p><code class="xref py py-func docutils literal notranslate"><span class="pre">dr.geom_size()</span></code> only supports primitive geom types (sphere, capsule,
 ellipsoid, cylinder, box) because broadphase bounds for mesh, plane, and
 heightfield geoms cannot be recomputed analytically. Selecting a non-primitive
-geom raises a <code class="docutils literal notranslate"><span class="pre">ValueError</span></code>. Filter your <code class="docutils literal notranslate"><span class="pre">SceneEntityCfg</span></code> to primitive geoms
+geom raises a <code class="docutils literal notranslate"><span class="pre">ValueError</span></code>. Filter the <code class="docutils literal notranslate"><span class="pre">SceneEntityCfg</span></code> to primitive geoms
 only:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Select only primitive geoms by name pattern.</span>
 <span class="n">geom_cfg</span> <span class="o">=</span> <span class="n">SceneEntityCfg</span><span class="p">(</span><span class="s2">&quot;robot&quot;</span><span class="p">,</span> <span class="n">geom_names</span><span class="o">=</span><span class="p">(</span><span class="s2">&quot;.*sphere.*&quot;</span><span class="p">,</span> <span class="s2">&quot;.*box.*&quot;</span><span class="p">))</span>
@@ -1630,21 +1669,21 @@ GPU kernels index into these arrays with <code class="docutils literal notransla
 model parameters.</p>
 <p>On the PyTorch side, mjlab wraps these stride-0 arrays using <code class="docutils literal notranslate"><span class="pre">torch.expand</span></code>
 so they appear to have shape <code class="docutils literal notranslate"><span class="pre">(num_envs,</span> <span class="pre">ngeom,</span> <span class="pre">3)</span></code> while still backed by a
-single row of memory. You can index with <code class="docutils literal notranslate"><span class="pre">tensor[env_id]</span></code> and it looks like
+single row of memory. Indexing with <code class="docutils literal notranslate"><span class="pre">tensor[env_id]</span></code> makes it look like
 each world has its own data, but writes to any world affect all of them because
 they all point to the same underlying memory.</p>
-<p>To actually give each world independent values, we <strong>expand</strong> the underlying
-Warp array from shape <code class="docutils literal notranslate"><span class="pre">(1,</span> <span class="pre">N)</span></code> to <code class="docutils literal notranslate"><span class="pre">(num_worlds,</span> <span class="pre">N)</span></code> with real per-world
-memory and normal strides. This is what <code class="docutils literal notranslate"><span class="pre">sim.expand_model_fields()</span></code> does: it
+<p>To give each world independent values, the underlying Warp array is
+<strong>expanded</strong> from shape <code class="docutils literal notranslate"><span class="pre">(1,</span> <span class="pre">N)</span></code> to <code class="docutils literal notranslate"><span class="pre">(num_worlds,</span> <span class="pre">N)</span></code> with real
+per-world memory and normal strides. <code class="docutils literal notranslate"><span class="pre">sim.expand_model_fields()</span></code>
 allocates a new array, copies the shared data into each world’s row, and
 replaces the old array on the model. After expansion, writes to one world no
 longer affect others and each world can have its own friction, mass, or
 damping values.</p>
 <p>Each <code class="docutils literal notranslate"><span class="pre">dr</span></code> function declares which fields it needs via the
 <code class="docutils literal notranslate"><span class="pre">&#64;requires_model_fields</span></code> decorator, and the <code class="docutils literal notranslate"><span class="pre">EventManager</span></code> collects these
-at startup so expansion happens automatically. If you are writing a custom DR
-term that directly modifies model arrays, make sure those arrays have been
-expanded. Either decorate your function with <code class="docutils literal notranslate"><span class="pre">&#64;requires_model_fields</span></code> or call
+at startup so expansion happens automatically. Custom DR terms that directly
+modify model arrays must ensure those arrays have been expanded. Either
+decorate the function with <code class="docutils literal notranslate"><span class="pre">&#64;requires_model_fields</span></code> or call
 <code class="docutils literal notranslate"><span class="pre">sim.expand_model_fields()</span></code> manually.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
@@ -1660,7 +1699,7 @@ environment startup, not per-episode.</p>
 for each world, compile each one into its own <code class="docutils literal notranslate"><span class="pre">MjModel</span></code>, and transfer them all
 to the GPU. That would give perfectly consistent derived quantities for free
 because <code class="docutils literal notranslate"><span class="pre">mj_setConst</span></code> runs during compilation.</p>
-<p>We don’t do this for two reasons:</p>
+<p>mjlab does not do this for two reasons:</p>
 <ol class="arabic simple">
 <li><p><strong>Cost.</strong> Compiling an <code class="docutils literal notranslate"><span class="pre">MjSpec</span></code> is a CPU operation. Doing it once per world
 on every episode reset would be far too slow for thousands of environments.</p></li>
@@ -1668,7 +1707,7 @@ on every episode reset would be far too slow for thousands of environments.</p><
 worlds. There is no mechanism to load N independent models into one
 simulation.</p></li>
 </ol>
-<p>Instead, we modify the expanded arrays in place on the GPU and selectively
+<p>Instead, mjlab modifies the expanded arrays in place on the GPU and selectively
 recompute only the derived quantities that depend on what changed. This is
 what the <code class="docutils literal notranslate"><span class="pre">RecomputeLevel</span></code> system handles.</p>
 </section>
@@ -1676,13 +1715,13 @@ what the <code class="docutils literal notranslate"><span class="pre">RecomputeL
 <span id="dr-recomputation"></span><h3>Recomputation of derived fields<a class="headerlink" href="#recomputation-of-derived-fields" title="Link to this heading">#</a></h3>
 <p>Some model fields are <strong>derived</strong> from others. For example,
 <code class="docutils literal notranslate"><span class="pre">body_subtreemass</span></code> (the total mass of a body and all its descendants) depends
-on <code class="docutils literal notranslate"><span class="pre">body_mass</span></code>. If you change <code class="docutils literal notranslate"><span class="pre">body_mass</span></code> without updating
+on <code class="docutils literal notranslate"><span class="pre">body_mass</span></code>. Changing <code class="docutils literal notranslate"><span class="pre">body_mass</span></code> without updating
 <code class="docutils literal notranslate"><span class="pre">body_subtreemass</span></code>, the constraint solver will use stale impedance values
 and the simulation will be subtly wrong.</p>
-<p>In C MuJoCo, you would call <a class="reference external" href="https://mujoco.readthedocs.io/en/latest/programming/simulation.html#mjmodel-changes">mj_setConst</a>
+<p>In C MuJoCo, the solution is to call <a class="reference external" href="https://mujoco.readthedocs.io/en/latest/programming/simulation.html#mjmodel-changes">mj_setConst</a>
 after modifying model parameters at runtime. MuJoCo Warp provides an equivalent
 set of functions (<code class="docutils literal notranslate"><span class="pre">set_const</span></code>, <code class="docutils literal notranslate"><span class="pre">set_const_0</span></code>, <code class="docutils literal notranslate"><span class="pre">set_const_fixed</span></code>) that run
-on the GPU and operate on all worlds in parallel. mjlab calls these for you
+on the GPU and operate on all worlds in parallel. mjlab calls these
 automatically.</p>
 <p>The three recomputation levels, from cheapest to most expensive:</p>
 <div class="pst-scrollable-table-container"><table class="table">
@@ -1718,7 +1757,7 @@ automatically.</p>
 <p>The built-in <code class="docutils literal notranslate"><span class="pre">dr</span></code> functions already declare the correct level. When the
 <code class="docutils literal notranslate"><span class="pre">EventManager</span></code> fires multiple DR terms in a single <code class="docutils literal notranslate"><span class="pre">apply()</span></code> call, it
 tracks the strongest level among them and calls <code class="docutils literal notranslate"><span class="pre">sim.recompute_constants()</span></code>
-once at the end. You never need to call it yourself unless you are writing
+once at the end. Manual calls are unnecessary unless writing
 custom DR logic.</p>
 <p>Fields that only affect contact or joint behavior directly (<code class="docutils literal notranslate"><span class="pre">geom_friction</span></code>,
 <code class="docutils literal notranslate"><span class="pre">dof_damping</span></code>, <code class="docutils literal notranslate"><span class="pre">dof_frictionloss</span></code>, etc.) have no derived quantities and
@@ -1742,7 +1781,7 @@ randomize at any frequency.</p>
 </section>
 <section id="custom-class-based-event-terms">
 <span id="dr-custom-event-terms"></span><h2>Custom Class-Based Event Terms<a class="headerlink" href="#custom-class-based-event-terms" title="Link to this heading">#</a></h2>
-<p>You can create custom event terms using classes instead of functions. This is
+<p>Custom event terms can also use classes instead of functions. This is
 useful for event terms that need to maintain state or perform initialization
 logic:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">class</span><span class="w"> </span><span class="nc">RandomizeTerrainFriction</span><span class="p">:</span>
@@ -1766,7 +1805,7 @@ logic:</p>
         <span class="p">)</span>
 
 
-<span class="c1"># Use the custom class in your environment config</span>
+<span class="c1"># Register in the environment config.</span>
 <span class="n">terrain_friction</span><span class="p">:</span> <span class="n">EventTermCfg</span> <span class="o">=</span> <span class="n">EventTermCfg</span><span class="p">(</span>
     <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;reset&quot;</span><span class="p">,</span>
     <span class="n">func</span><span class="o">=</span><span class="n">RandomizeTerrainFriction</span><span class="p">,</span>
@@ -1865,20 +1904,20 @@ for details.</p>
                   
 <div class="prev-next-area">
     <a class="left-prev"
-       href="api/terrains.html"
+       href="events.html"
        title="previous page">
       <i class="fa-solid fa-angle-left"></i>
       <div class="prev-next-info">
         <p class="prev-next-subtitle">previous</p>
-        <p class="prev-next-title">mjlab.terrains</p>
+        <p class="prev-next-title">Events</p>
       </div>
     </a>
     <a class="right-next"
-       href="nan_guard.html"
+       href="curriculum.html"
        title="next page">
       <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">NaN Guard</p>
+        <p class="prev-next-title">Curriculum</p>
       </div>
       <i class="fa-solid fa-angle-right"></i>
     </a>
@@ -1979,7 +2018,7 @@ By The mjlab Developers
   
   <div class="footer-item">
     <p class="last-updated">
-  Last updated on Feb 24, 2026.
+  Last updated on Mar 14, 2026.
   <br/>
 </p>
   </div>

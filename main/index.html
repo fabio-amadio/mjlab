@@ -58,7 +58,7 @@
     <link rel="next" title="Installation Guide" href="source/installation.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-    <meta name="docbuild:last-update" content="Feb 24, 2026"/>
+    <meta name="docbuild:last-update" content="Mar 14, 2026"/>
   </head>
   
   
@@ -146,7 +146,7 @@
   
   
   
-    <p class="title logo__title">The mjlab Documentation</p>
+    <p class="title logo__title">mjlab Documentation</p>
   
 </a></div>
         <div class="sidebar-primary-item">
@@ -177,17 +177,55 @@
 </div>
         <div class="sidebar-primary-item"><nav class="bd-links bd-docs-nav" aria-label="Main">
     <div class="bd-toc-item navbar-nav active">
-        <p aria-level="2" class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+        <p aria-level="2" class="caption" role="heading"><span class="caption-text">User Guide</span></p>
 <ul class="nav bd-sidenav">
 <li class="toctree-l1"><a class="reference internal" href="source/installation.html">Installation Guide</a></li>
-<li class="toctree-l1"><a class="reference internal" href="source/migration_isaac_lab.html">Migrating from Isaac Lab</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="source/tutorials.html">Tutorials</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="source/tutorials/cartpole.html">Cartpole: Building Your First Environment</a></li>
 </ul>
-<p aria-level="2" class="caption" role="heading"><span class="caption-text">About the Project</span></p>
-<ul class="nav bd-sidenav">
-<li class="toctree-l1"><a class="reference internal" href="source/motivation.html">Why mjlab?</a></li>
-<li class="toctree-l1"><a class="reference internal" href="source/faq.html">FAQ &amp; Troubleshooting</a></li>
+</details></li>
 <li class="toctree-l1"><a class="reference internal" href="source/contributing.html">Contributing</a></li>
-<li class="toctree-l1"><a class="reference internal" href="source/changelog.html">Changelog</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Concepts</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="source/architecture_overview.html">Architecture Overview</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="source/entity/index.html">Entity</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="source/entity/entity_data.html">Entity Data</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1"><a class="reference internal" href="source/actuators.html">Actuators</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="source/sensors/index.html">Sensors</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="source/sensors/raycast_sensor.html">RayCast Sensor</a></li>
+<li class="toctree-l2"><a class="reference internal" href="source/sensors/rgbd_camera.html">RGB-D Camera</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1"><a class="reference internal" href="source/scene.html">Scene</a></li>
+<li class="toctree-l1"><a class="reference internal" href="source/terrain.html">Terrain</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">The Manager Layer</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="source/environment_config.html">Environment Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="source/observations.html">Observations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="source/actions.html">Actions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="source/rewards.html">Rewards</a></li>
+<li class="toctree-l1"><a class="reference internal" href="source/terminations.html">Terminations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="source/commands.html">Commands</a></li>
+<li class="toctree-l1"><a class="reference internal" href="source/events.html">Events</a></li>
+<li class="toctree-l1"><a class="reference internal" href="source/randomization.html">Domain Randomization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="source/curriculum.html">Curriculum</a></li>
+<li class="toctree-l1"><a class="reference internal" href="source/metrics.html">Metrics</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Training &amp; Debugging</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1 has-children"><a class="reference internal" href="source/training/rsl_rl.html">Training with RSL-RL</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="source/training/motion_imitation.html">Motion Imitation</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1"><a class="reference internal" href="source/viewers.html">Viewers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="source/training/distributed_training.html">Distributed Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="source/training/cloud.html">Cloud Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="source/debugging/nan_guard.html">NaN Guard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="source/debugging/export_scene.html">Export Scene</a></li>
 </ul>
 <p aria-level="2" class="caption" role="heading"><span class="caption-text">API Reference</span></p>
 <ul class="nav bd-sidenav">
@@ -200,18 +238,19 @@
 <li class="toctree-l2"><a class="reference internal" href="source/api/sensor.html">mjlab.sensor</a></li>
 <li class="toctree-l2"><a class="reference internal" href="source/api/managers.html">mjlab.managers</a></li>
 <li class="toctree-l2"><a class="reference internal" href="source/api/terrains.html">mjlab.terrains</a></li>
+<li class="toctree-l2"><a class="reference internal" href="source/api/rl.html">mjlab.rl</a></li>
+<li class="toctree-l2"><a class="reference internal" href="source/api/viewer.html">mjlab.viewer</a></li>
+<li class="toctree-l2"><a class="reference internal" href="source/api/tasks.html">mjlab.tasks</a></li>
 </ul>
 </details></li>
 </ul>
-<p aria-level="2" class="caption" role="heading"><span class="caption-text">Core Concepts</span></p>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Further Reading</span></p>
 <ul class="nav bd-sidenav">
-<li class="toctree-l1"><a class="reference internal" href="source/randomization.html">Domain Randomization</a></li>
-<li class="toctree-l1"><a class="reference internal" href="source/nan_guard.html">NaN Guard</a></li>
-<li class="toctree-l1"><a class="reference internal" href="source/observation.html">Observation History and Delay</a></li>
-<li class="toctree-l1"><a class="reference internal" href="source/actuators.html">Actuators</a></li>
-<li class="toctree-l1"><a class="reference internal" href="source/sensors.html">Sensors</a></li>
-<li class="toctree-l1"><a class="reference internal" href="source/raycast_sensor.html">RayCast Sensor</a></li>
-<li class="toctree-l1"><a class="reference internal" href="source/distributed_training.html">Distributed Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="source/motivation.html">Why mjlab?</a></li>
+<li class="toctree-l1"><a class="reference internal" href="source/migration_isaac_lab.html">Migrating from Isaac Lab</a></li>
+<li class="toctree-l1"><a class="reference internal" href="source/faq.html">FAQ &amp; Troubleshooting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="source/research.html">Research</a></li>
+<li class="toctree-l1"><a class="reference internal" href="source/changelog.html">Changelog</a></li>
 </ul>
 
     </div>
@@ -424,15 +463,12 @@ document.write(`
             </div>
             <nav aria-label="Page">
                 <ul class="visible nav section-nav flex-column">
-<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#">Welcome to mjlab!</a></li>
-<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#what-is-mjlab">What is mjlab?</a></li>
-<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#license-citation">License &amp; citation</a></li>
-<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#acknowledgments">Acknowledgments</a></li>
-<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#table-of-contents">Table of Contents</a><ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#table-of-contents">Table of Contents</a><ul class="visible nav section-nav flex-column">
 </ul>
 </li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#license-citation">License &amp; citation</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#acknowledgments">Acknowledgments</a></li>
 </ul>
-
             </nav>
         </div>
     </div>
@@ -449,61 +485,77 @@ document.write(`
 <a class="reference internal image-reference" href="_images/mjlab-banner.jpg"><img alt="mjlab" src="_images/mjlab-banner.jpg" style="width: 100%;" />
 </a>
 </figure>
-</section>
-<section id="what-is-mjlab">
-<h1>What is mjlab?<a class="headerlink" href="#what-is-mjlab" title="Link to this heading">#</a></h1>
-<p><strong>mjlab = Isaac Lab’s API + MuJoCo’s simplicity + GPU acceleration</strong></p>
-<p>We took Isaac Lab’s proven manager-based architecture and RL abstractions,
-then built them directly on MuJoCo Warp. No translation layers, no Omniverse
-overhead. Just fast, transparent physics.</p>
-<p>You can try mjlab <em>without installing anything</em> by using <cite>uvx</cite>:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Install uv if you haven&#39;t already</span>
-curl<span class="w"> </span>-LsSf<span class="w"> </span>https://astral.sh/uv/install.sh<span class="w"> </span><span class="p">|</span><span class="w"> </span>sh
-
-<span class="c1"># Run the mjlab demo (no local installation needed)</span>
-uvx<span class="w"> </span>--from<span class="w"> </span>mjlab<span class="w"> </span>demo
+<p>mjlab is a lightweight, open-source framework for robot learning that
+combines GPU-accelerated simulation with composable environments and minimal
+setup friction. It adopts the manager-based API introduced by
+<a class="reference external" href="https://github.com/isaac-sim/IsaacLab">Isaac Lab</a>, where users compose
+modular building blocks for observations, rewards, and events, and pairs it
+with <a class="reference external" href="https://github.com/google-deepmind/mujoco_warp">MuJoCo Warp</a> for
+GPU-accelerated physics. The result is a framework installable with a single
+command, requiring minimal dependencies, and providing direct access to
+native <a class="reference external" href="https://github.com/google-deepmind/mujoco">MuJoCo</a> data
+structures.</p>
+<p><strong>Key features:</strong></p>
+<ul class="simple">
+<li><p><strong>Composable environments:</strong> users define observations, rewards,
+terminations, and other MDP terms as modular building blocks</p></li>
+<li><p><strong>Minimal dependencies:</strong> single-command install via <code class="docutils literal notranslate"><span class="pre">uv</span></code>, low startup
+latency</p></li>
+<li><p><strong>Direct MuJoCo data structures:</strong> native <code class="docutils literal notranslate"><span class="pre">MjModel</span></code>/<code class="docutils literal notranslate"><span class="pre">MjData</span></code> access
+with no translation layers</p></li>
+<li><p><strong>PyTorch-native:</strong> observations, rewards, and actions are PyTorch
+tensors backed by zero-copy GPU memory sharing</p></li>
+</ul>
+<p>For more on the design decisions behind mjlab, see <a class="reference internal" href="source/motivation.html"><span class="doc">Why mjlab?</span></a>.</p>
+<p><strong>Try it now</strong> (no installation needed):</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>uvx<span class="w"> </span>--from<span class="w"> </span>mjlab<span class="w"> </span>--refresh<span class="w"> </span>demo
 </pre></div>
 </div>
-<p>If this runs, your setup is compatible with mjlab <em>for evaluation</em>.</p>
-</section>
-<section id="license-citation">
-<h1>License &amp; citation<a class="headerlink" href="#license-citation" title="Link to this heading">#</a></h1>
-<p>mjlab is licensed under the Apache License, Version 2.0.
-Please refer to the <a class="reference external" href="https://github.com/mujocolab/mjlab/blob/main/LICENSE/">LICENSE file</a> for details.</p>
-<p>If you use mjlab in your research, we would appreciate a citation:</p>
-<div class="highlight-bibtex notranslate"><div class="highlight"><pre><span></span><span class="nc">@article</span><span class="p">{</span><span class="nl">Zakka_mjlab_A_Lightweight_2026</span><span class="p">,</span>
-<span class="w">    </span><span class="na">author</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{Zakka, Kevin and Liao, Qiayuan and Yi, Brent and Le Lay, Louis and Sreenath, Koushil and Abbeel, Pieter}</span><span class="p">,</span>
-<span class="w">    </span><span class="na">title</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{{mjlab: A Lightweight Framework for GPU-Accelerated Robot Learning}}</span><span class="p">,</span>
-<span class="w">    </span><span class="na">url</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{https://arxiv.org/abs/2601.22074}</span><span class="p">,</span>
-<span class="w">    </span><span class="na">year</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{2026}</span>
-<span class="p">}</span>
-</pre></div>
-</div>
-</section>
-<section id="acknowledgments">
-<h1>Acknowledgments<a class="headerlink" href="#acknowledgments" title="Link to this heading">#</a></h1>
-<p>mjlab would not exist without the excellent work of the Isaac Lab team, whose API design
-and abstractions mjlab builds upon.</p>
-<p>Thanks also to the MuJoCo Warp team — especially Erik Frey and Taylor Howell — for
-answering our questions, giving helpful feedback, and implementing features based
-on our requests countless times.</p>
-</section>
 <section id="table-of-contents">
-<h1>Table of Contents<a class="headerlink" href="#table-of-contents" title="Link to this heading">#</a></h1>
+<h2>Table of Contents<a class="headerlink" href="#table-of-contents" title="Link to this heading">#</a></h2>
 <div class="toctree-wrapper compound">
-<p aria-level="2" class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">User Guide</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="source/installation.html">Installation Guide</a></li>
-<li class="toctree-l1"><a class="reference internal" href="source/migration_isaac_lab.html">Migrating from Isaac Lab</a></li>
+<li class="toctree-l1"><a class="reference internal" href="source/tutorials.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="source/contributing.html">Contributing</a></li>
 </ul>
 </div>
 <div class="toctree-wrapper compound">
-<p aria-level="2" class="caption" role="heading"><span class="caption-text">About the Project</span></p>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Concepts</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="source/motivation.html">Why mjlab?</a></li>
-<li class="toctree-l1"><a class="reference internal" href="source/faq.html">FAQ &amp; Troubleshooting</a></li>
-<li class="toctree-l1"><a class="reference internal" href="source/contributing.html">Contributing</a></li>
-<li class="toctree-l1"><a class="reference internal" href="source/changelog.html">Changelog</a></li>
+<li class="toctree-l1"><a class="reference internal" href="source/architecture_overview.html">Architecture Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="source/entity/index.html">Entity</a></li>
+<li class="toctree-l1"><a class="reference internal" href="source/actuators.html">Actuators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="source/sensors/index.html">Sensors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="source/scene.html">Scene</a></li>
+<li class="toctree-l1"><a class="reference internal" href="source/terrain.html">Terrain</a></li>
+</ul>
+</div>
+<div class="toctree-wrapper compound">
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">The Manager Layer</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="source/environment_config.html">Environment Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="source/observations.html">Observations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="source/actions.html">Actions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="source/rewards.html">Rewards</a></li>
+<li class="toctree-l1"><a class="reference internal" href="source/terminations.html">Terminations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="source/commands.html">Commands</a></li>
+<li class="toctree-l1"><a class="reference internal" href="source/events.html">Events</a></li>
+<li class="toctree-l1"><a class="reference internal" href="source/randomization.html">Domain Randomization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="source/curriculum.html">Curriculum</a></li>
+<li class="toctree-l1"><a class="reference internal" href="source/metrics.html">Metrics</a></li>
+</ul>
+</div>
+<div class="toctree-wrapper compound">
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Training &amp; Debugging</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="source/training/rsl_rl.html">Training with RSL-RL</a></li>
+<li class="toctree-l1"><a class="reference internal" href="source/viewers.html">Viewers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="source/training/distributed_training.html">Distributed Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="source/training/cloud.html">Cloud Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="source/debugging/nan_guard.html">NaN Guard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="source/debugging/export_scene.html">Export Scene</a></li>
 </ul>
 </div>
 <div class="toctree-wrapper compound">
@@ -518,22 +570,46 @@ on our requests countless times.</p>
 <li class="toctree-l2"><a class="reference internal" href="source/api/sensor.html">mjlab.sensor</a></li>
 <li class="toctree-l2"><a class="reference internal" href="source/api/managers.html">mjlab.managers</a></li>
 <li class="toctree-l2"><a class="reference internal" href="source/api/terrains.html">mjlab.terrains</a></li>
+<li class="toctree-l2"><a class="reference internal" href="source/api/rl.html">mjlab.rl</a></li>
+<li class="toctree-l2"><a class="reference internal" href="source/api/viewer.html">mjlab.viewer</a></li>
+<li class="toctree-l2"><a class="reference internal" href="source/api/tasks.html">mjlab.tasks</a></li>
 </ul>
 </li>
 </ul>
 </div>
 <div class="toctree-wrapper compound">
-<p aria-level="2" class="caption" role="heading"><span class="caption-text">Core Concepts</span></p>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Further Reading</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="source/randomization.html">Domain Randomization</a></li>
-<li class="toctree-l1"><a class="reference internal" href="source/nan_guard.html">NaN Guard</a></li>
-<li class="toctree-l1"><a class="reference internal" href="source/observation.html">Observation History and Delay</a></li>
-<li class="toctree-l1"><a class="reference internal" href="source/actuators.html">Actuators</a></li>
-<li class="toctree-l1"><a class="reference internal" href="source/sensors.html">Sensors</a></li>
-<li class="toctree-l1"><a class="reference internal" href="source/raycast_sensor.html">RayCast Sensor</a></li>
-<li class="toctree-l1"><a class="reference internal" href="source/distributed_training.html">Distributed Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="source/motivation.html">Why mjlab?</a></li>
+<li class="toctree-l1"><a class="reference internal" href="source/migration_isaac_lab.html">Migrating from Isaac Lab</a></li>
+<li class="toctree-l1"><a class="reference internal" href="source/faq.html">FAQ &amp; Troubleshooting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="source/research.html">Research</a></li>
+<li class="toctree-l1"><a class="reference internal" href="source/changelog.html">Changelog</a></li>
 </ul>
 </div>
+</section>
+<section id="license-citation">
+<h2>License &amp; citation<a class="headerlink" href="#license-citation" title="Link to this heading">#</a></h2>
+<p>mjlab is licensed under the Apache License, Version 2.0.
+Please refer to the <a class="reference external" href="https://github.com/mujocolab/mjlab/blob/main/LICENSE/">LICENSE file</a> for details.</p>
+<p>If you use mjlab in your research, we would appreciate a citation:</p>
+<div class="highlight-bibtex notranslate"><div class="highlight"><pre><span></span><span class="nc">@article</span><span class="p">{</span><span class="nl">Zakka_mjlab_A_Lightweight_2026</span><span class="p">,</span>
+<span class="w">    </span><span class="na">author</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{Zakka, Kevin and Liao, Qiayuan and Yi, Brent and Le Lay, Louis and Sreenath, Koushil and Abbeel, Pieter}</span><span class="p">,</span>
+<span class="w">    </span><span class="na">title</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{{mjlab: A Lightweight Framework for GPU-Accelerated Robot Learning}}</span><span class="p">,</span>
+<span class="w">    </span><span class="na">url</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{https://arxiv.org/abs/2601.22074}</span><span class="p">,</span>
+<span class="w">    </span><span class="na">year</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{2026}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</section>
+<section id="acknowledgments">
+<h2>Acknowledgments<a class="headerlink" href="#acknowledgments" title="Link to this heading">#</a></h2>
+<p>mjlab would not exist without the excellent work of the Isaac Lab team, whose API design
+and abstractions mjlab builds upon.</p>
+<p>Thanks also to the MuJoCo Warp team — especially Erik Frey and Taylor Howell — for
+answering our questions, giving helpful feedback, and implementing features based
+on our requests countless times.</p>
+</section>
 </section>
 
 
@@ -572,15 +648,12 @@ on our requests countless times.</p>
   </div>
   <nav class="bd-toc-nav page-toc">
     <ul class="visible nav section-nav flex-column">
-<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#">Welcome to mjlab!</a></li>
-<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#what-is-mjlab">What is mjlab?</a></li>
-<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#license-citation">License &amp; citation</a></li>
-<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#acknowledgments">Acknowledgments</a></li>
-<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#table-of-contents">Table of Contents</a><ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#table-of-contents">Table of Contents</a><ul class="visible nav section-nav flex-column">
 </ul>
 </li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#license-citation">License &amp; citation</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#acknowledgments">Acknowledgments</a></li>
 </ul>
-
   </nav></div>
 
 </div></div>
@@ -613,7 +686,7 @@ By The mjlab Developers
   
   <div class="footer-item">
     <p class="last-updated">
-  Last updated on Feb 24, 2026.
+  Last updated on Mar 14, 2026.
   <br/>
 </p>
   </div>

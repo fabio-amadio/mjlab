@@ -55,11 +55,11 @@
     <link rel="icon" href="../_static/favicon.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="Changelog" href="changelog.html" />
-    <link rel="prev" title="FAQ &amp; Troubleshooting" href="faq.html" />
+    <link rel="next" title="Architecture Overview" href="architecture_overview.html" />
+    <link rel="prev" title="Cartpole: Building Your First Environment" href="tutorials/cartpole.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-    <meta name="docbuild:last-update" content="Feb 24, 2026"/>
+    <meta name="docbuild:last-update" content="Mar 14, 2026"/>
   </head>
   
   
@@ -145,7 +145,7 @@
   
   
   
-    <p class="title logo__title">The mjlab Documentation</p>
+    <p class="title logo__title">mjlab Documentation</p>
   
 </a></div>
         <div class="sidebar-primary-item">
@@ -176,17 +176,55 @@
 </div>
         <div class="sidebar-primary-item"><nav class="bd-links bd-docs-nav" aria-label="Main">
     <div class="bd-toc-item navbar-nav active">
-        <p aria-level="2" class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
-<ul class="nav bd-sidenav">
-<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation Guide</a></li>
-<li class="toctree-l1"><a class="reference internal" href="migration_isaac_lab.html">Migrating from Isaac Lab</a></li>
-</ul>
-<p aria-level="2" class="caption" role="heading"><span class="caption-text">About the Project</span></p>
+        <p aria-level="2" class="caption" role="heading"><span class="caption-text">User Guide</span></p>
 <ul class="current nav bd-sidenav">
-<li class="toctree-l1"><a class="reference internal" href="motivation.html">Why mjlab?</a></li>
-<li class="toctree-l1"><a class="reference internal" href="faq.html">FAQ &amp; Troubleshooting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation Guide</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="tutorials.html">Tutorials</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="tutorials/cartpole.html">Cartpole: Building Your First Environment</a></li>
+</ul>
+</details></li>
 <li class="toctree-l1 current active"><a class="current reference internal" href="#">Contributing</a></li>
-<li class="toctree-l1"><a class="reference internal" href="changelog.html">Changelog</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Concepts</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="architecture_overview.html">Architecture Overview</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="entity/index.html">Entity</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="entity/entity_data.html">Entity Data</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1"><a class="reference internal" href="actuators.html">Actuators</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="sensors/index.html">Sensors</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="sensors/raycast_sensor.html">RayCast Sensor</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sensors/rgbd_camera.html">RGB-D Camera</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1"><a class="reference internal" href="scene.html">Scene</a></li>
+<li class="toctree-l1"><a class="reference internal" href="terrain.html">Terrain</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">The Manager Layer</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="environment_config.html">Environment Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="observations.html">Observations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="actions.html">Actions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="rewards.html">Rewards</a></li>
+<li class="toctree-l1"><a class="reference internal" href="terminations.html">Terminations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="commands.html">Commands</a></li>
+<li class="toctree-l1"><a class="reference internal" href="events.html">Events</a></li>
+<li class="toctree-l1"><a class="reference internal" href="randomization.html">Domain Randomization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="curriculum.html">Curriculum</a></li>
+<li class="toctree-l1"><a class="reference internal" href="metrics.html">Metrics</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Training &amp; Debugging</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1 has-children"><a class="reference internal" href="training/rsl_rl.html">Training with RSL-RL</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="training/motion_imitation.html">Motion Imitation</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1"><a class="reference internal" href="viewers.html">Viewers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="training/distributed_training.html">Distributed Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="training/cloud.html">Cloud Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="debugging/nan_guard.html">NaN Guard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="debugging/export_scene.html">Export Scene</a></li>
 </ul>
 <p aria-level="2" class="caption" role="heading"><span class="caption-text">API Reference</span></p>
 <ul class="nav bd-sidenav">
@@ -199,18 +237,19 @@
 <li class="toctree-l2"><a class="reference internal" href="api/sensor.html">mjlab.sensor</a></li>
 <li class="toctree-l2"><a class="reference internal" href="api/managers.html">mjlab.managers</a></li>
 <li class="toctree-l2"><a class="reference internal" href="api/terrains.html">mjlab.terrains</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/rl.html">mjlab.rl</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/viewer.html">mjlab.viewer</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/tasks.html">mjlab.tasks</a></li>
 </ul>
 </details></li>
 </ul>
-<p aria-level="2" class="caption" role="heading"><span class="caption-text">Core Concepts</span></p>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Further Reading</span></p>
 <ul class="nav bd-sidenav">
-<li class="toctree-l1"><a class="reference internal" href="randomization.html">Domain Randomization</a></li>
-<li class="toctree-l1"><a class="reference internal" href="nan_guard.html">NaN Guard</a></li>
-<li class="toctree-l1"><a class="reference internal" href="observation.html">Observation History and Delay</a></li>
-<li class="toctree-l1"><a class="reference internal" href="actuators.html">Actuators</a></li>
-<li class="toctree-l1"><a class="reference internal" href="sensors.html">Sensors</a></li>
-<li class="toctree-l1"><a class="reference internal" href="raycast_sensor.html">RayCast Sensor</a></li>
-<li class="toctree-l1"><a class="reference internal" href="distributed_training.html">Distributed Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="motivation.html">Why mjlab?</a></li>
+<li class="toctree-l1"><a class="reference internal" href="migration_isaac_lab.html">Migrating from Isaac Lab</a></li>
+<li class="toctree-l1"><a class="reference internal" href="faq.html">FAQ &amp; Troubleshooting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="research.html">Research</a></li>
+<li class="toctree-l1"><a class="reference internal" href="changelog.html">Changelog</a></li>
 </ul>
 
     </div>
@@ -423,8 +462,11 @@ document.write(`
             </div>
             <nav aria-label="Page">
                 <ul class="visible nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#claude-md">CLAUDE.md</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#claude-code-commands">Claude Code Commands</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#development-setup">Development setup</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#common-commands">Common commands</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#building-the-docs">Building the docs</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#submitting-a-pull-request">Submitting a pull request</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#development-with-claude-code">Development with Claude Code</a></li>
 </ul>
             </nav>
         </div>
@@ -438,19 +480,78 @@ document.write(`
                   
   <section id="contributing">
 <h1>Contributing<a class="headerlink" href="#contributing" title="Link to this heading">#</a></h1>
-<p>See <a class="reference external" href="https://github.com/mujocolab/mjlab/blob/main/CONTRIBUTING.md">CONTRIBUTING.md</a>
-for the general contribution workflow, including forking, testing, and changelog
-conventions.</p>
-<section id="claude-md">
-<h2>CLAUDE.md<a class="headerlink" href="#claude-md" title="Link to this heading">#</a></h2>
+<p>Bug fixes and documentation improvements are always welcome.</p>
+<div class="admonition important">
+<p class="admonition-title">Important</p>
+<p>For new features, please
+<a class="reference external" href="https://github.com/mujocolab/mjlab/issues">open an issue</a> first so
+we can discuss whether it fits the project scope.</p>
+</div>
+<section id="development-setup">
+<h2>Development setup<a class="headerlink" href="#development-setup" title="Link to this heading">#</a></h2>
+<p>Clone the repository and sync dependencies:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/mujocolab/mjlab.git<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="nb">cd</span><span class="w"> </span>mjlab
+uv<span class="w"> </span>sync
+</pre></div>
+</div>
+<p>Install pre-commit hooks to catch formatting and lint issues before each
+commit:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>uvx<span class="w"> </span>pre-commit<span class="w"> </span>install
+</pre></div>
+</div>
+</section>
+<section id="common-commands">
+<h2>Common commands<a class="headerlink" href="#common-commands" title="Link to this heading">#</a></h2>
+<p>The <code class="docutils literal notranslate"><span class="pre">Makefile</span></code> provides shortcuts for the most common development tasks:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>make<span class="w"> </span>format<span class="w">      </span><span class="c1"># Format code and fix lint errors (ruff)</span>
+make<span class="w"> </span><span class="nb">type</span><span class="w">        </span><span class="c1"># Type check (ty + pyright)</span>
+make<span class="w"> </span>check<span class="w">       </span><span class="c1"># Format + type check</span>
+make<span class="w"> </span>test-fast<span class="w">   </span><span class="c1"># Run tests, excluding slow ones</span>
+make<span class="w"> </span><span class="nb">test</span><span class="w">        </span><span class="c1"># Run the full test suite</span>
+make<span class="w"> </span>test-all<span class="w">    </span><span class="c1"># Format + type check + full test suite</span>
+</pre></div>
+</div>
+<p>You can also run individual tests for faster iteration:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>uv<span class="w"> </span>run<span class="w"> </span>pytest<span class="w"> </span>tests/test_rewards.py
+</pre></div>
+</div>
+<p>Type checking (<code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">type</span></code>) is required. PRs that do not pass will be
+blocked.</p>
+</section>
+<section id="building-the-docs">
+<h2>Building the docs<a class="headerlink" href="#building-the-docs" title="Link to this heading">#</a></h2>
+<p>Build the documentation locally:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>make<span class="w"> </span>docs
+</pre></div>
+</div>
+<p>The HTML output is written to <code class="docutils literal notranslate"><span class="pre">docs/_build/</span></code>. For live reload during
+editing:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>make<span class="w"> </span>docs-watch
+</pre></div>
+</div>
+</section>
+<section id="submitting-a-pull-request">
+<h2>Submitting a pull request<a class="headerlink" href="#submitting-a-pull-request" title="Link to this heading">#</a></h2>
+<ol class="arabic simple">
+<li><p>Fork the repository and create a feature branch.</p></li>
+<li><p>Make your changes.</p></li>
+<li><p>Run <code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">test-all</span></code> to verify formatting, type checking, and tests
+pass.</p></li>
+<li><p>Add an entry to the “Upcoming version” section in
+<code class="docutils literal notranslate"><span class="pre">docs/source/changelog.rst</span></code> under the appropriate category
+(Added / Changed / Fixed), following
+<a class="reference external" href="https://keepachangelog.com/">Keep a Changelog</a> conventions.</p></li>
+<li><p>Submit a pull request.</p></li>
+</ol>
+</section>
+<section id="development-with-claude-code">
+<h2>Development with Claude Code<a class="headerlink" href="#development-with-claude-code" title="Link to this heading">#</a></h2>
 <p>The repository includes a <code class="docutils literal notranslate"><span class="pre">CLAUDE.md</span></code> file at the project root. This file
 defines development conventions, style guidelines, and common commands for
-<a class="reference external" href="https://claude.com/claude-code">Claude Code</a>. It is also a useful reference
-for human contributors since it captures the same rules enforced in CI.</p>
-</section>
-<section id="claude-code-commands">
-<h2>Claude Code Commands<a class="headerlink" href="#claude-code-commands" title="Link to this heading">#</a></h2>
-<p>The project includes shared Claude Code commands in <code class="docutils literal notranslate"><span class="pre">.claude/commands/</span></code>.
+<a class="reference external" href="https://claude.com/claude-code">Claude Code</a>. It is also a useful
+reference for human contributors since it captures the same rules enforced
+in CI.</p>
+<p>The project also includes shared commands in <code class="docutils literal notranslate"><span class="pre">.claude/commands/</span></code>.
 Any contributor with Claude Code installed can invoke them as slash commands.</p>
 <dl>
 <dt><code class="docutils literal notranslate"><span class="pre">/update-mjwarp</span> <span class="pre">&lt;commit-hash&gt;</span></code></dt><dd><p>Update the <code class="docutils literal notranslate"><span class="pre">mujoco-warp</span></code> dependency to a specific commit. This edits
@@ -477,20 +578,20 @@ Any contributor with Claude Code installed can invoke them as slash commands.</p
                   
 <div class="prev-next-area">
     <a class="left-prev"
-       href="faq.html"
+       href="tutorials/cartpole.html"
        title="previous page">
       <i class="fa-solid fa-angle-left"></i>
       <div class="prev-next-info">
         <p class="prev-next-subtitle">previous</p>
-        <p class="prev-next-title">FAQ &amp; Troubleshooting</p>
+        <p class="prev-next-title">Cartpole: Building Your First Environment</p>
       </div>
     </a>
     <a class="right-next"
-       href="changelog.html"
+       href="architecture_overview.html"
        title="next page">
       <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">Changelog</p>
+        <p class="prev-next-title">Architecture Overview</p>
       </div>
       <i class="fa-solid fa-angle-right"></i>
     </a>
@@ -510,8 +611,11 @@ Any contributor with Claude Code installed can invoke them as slash commands.</p
   </div>
   <nav class="bd-toc-nav page-toc">
     <ul class="visible nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#claude-md">CLAUDE.md</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#claude-code-commands">Claude Code Commands</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#development-setup">Development setup</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#common-commands">Common commands</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#building-the-docs">Building the docs</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#submitting-a-pull-request">Submitting a pull request</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#development-with-claude-code">Development with Claude Code</a></li>
 </ul>
   </nav></div>
 
@@ -545,7 +649,7 @@ By The mjlab Developers
   
   <div class="footer-item">
     <p class="last-updated">
-  Last updated on Feb 24, 2026.
+  Last updated on Mar 14, 2026.
   <br/>
 </p>
   </div>

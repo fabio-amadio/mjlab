@@ -55,11 +55,11 @@
     <link rel="icon" href="../_static/favicon.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="FAQ &amp; Troubleshooting" href="faq.html" />
-    <link rel="prev" title="Migrating from Isaac Lab" href="migration_isaac_lab.html" />
+    <link rel="next" title="Migrating from Isaac Lab" href="migration_isaac_lab.html" />
+    <link rel="prev" title="mjlab.tasks" href="api/tasks.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-    <meta name="docbuild:last-update" content="Feb 24, 2026"/>
+    <meta name="docbuild:last-update" content="Mar 14, 2026"/>
   </head>
   
   
@@ -145,7 +145,7 @@
   
   
   
-    <p class="title logo__title">The mjlab Documentation</p>
+    <p class="title logo__title">mjlab Documentation</p>
   
 </a></div>
         <div class="sidebar-primary-item">
@@ -176,17 +176,55 @@
 </div>
         <div class="sidebar-primary-item"><nav class="bd-links bd-docs-nav" aria-label="Main">
     <div class="bd-toc-item navbar-nav active">
-        <p aria-level="2" class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+        <p aria-level="2" class="caption" role="heading"><span class="caption-text">User Guide</span></p>
 <ul class="nav bd-sidenav">
 <li class="toctree-l1"><a class="reference internal" href="installation.html">Installation Guide</a></li>
-<li class="toctree-l1"><a class="reference internal" href="migration_isaac_lab.html">Migrating from Isaac Lab</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="tutorials.html">Tutorials</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="tutorials/cartpole.html">Cartpole: Building Your First Environment</a></li>
 </ul>
-<p aria-level="2" class="caption" role="heading"><span class="caption-text">About the Project</span></p>
-<ul class="current nav bd-sidenav">
-<li class="toctree-l1 current active"><a class="current reference internal" href="#">Why mjlab?</a></li>
-<li class="toctree-l1"><a class="reference internal" href="faq.html">FAQ &amp; Troubleshooting</a></li>
+</details></li>
 <li class="toctree-l1"><a class="reference internal" href="contributing.html">Contributing</a></li>
-<li class="toctree-l1"><a class="reference internal" href="changelog.html">Changelog</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Concepts</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="architecture_overview.html">Architecture Overview</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="entity/index.html">Entity</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="entity/entity_data.html">Entity Data</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1"><a class="reference internal" href="actuators.html">Actuators</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="sensors/index.html">Sensors</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="sensors/raycast_sensor.html">RayCast Sensor</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sensors/rgbd_camera.html">RGB-D Camera</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1"><a class="reference internal" href="scene.html">Scene</a></li>
+<li class="toctree-l1"><a class="reference internal" href="terrain.html">Terrain</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">The Manager Layer</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="environment_config.html">Environment Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="observations.html">Observations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="actions.html">Actions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="rewards.html">Rewards</a></li>
+<li class="toctree-l1"><a class="reference internal" href="terminations.html">Terminations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="commands.html">Commands</a></li>
+<li class="toctree-l1"><a class="reference internal" href="events.html">Events</a></li>
+<li class="toctree-l1"><a class="reference internal" href="randomization.html">Domain Randomization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="curriculum.html">Curriculum</a></li>
+<li class="toctree-l1"><a class="reference internal" href="metrics.html">Metrics</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Training &amp; Debugging</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1 has-children"><a class="reference internal" href="training/rsl_rl.html">Training with RSL-RL</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="training/motion_imitation.html">Motion Imitation</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1"><a class="reference internal" href="viewers.html">Viewers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="training/distributed_training.html">Distributed Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="training/cloud.html">Cloud Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="debugging/nan_guard.html">NaN Guard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="debugging/export_scene.html">Export Scene</a></li>
 </ul>
 <p aria-level="2" class="caption" role="heading"><span class="caption-text">API Reference</span></p>
 <ul class="nav bd-sidenav">
@@ -199,18 +237,19 @@
 <li class="toctree-l2"><a class="reference internal" href="api/sensor.html">mjlab.sensor</a></li>
 <li class="toctree-l2"><a class="reference internal" href="api/managers.html">mjlab.managers</a></li>
 <li class="toctree-l2"><a class="reference internal" href="api/terrains.html">mjlab.terrains</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/rl.html">mjlab.rl</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/viewer.html">mjlab.viewer</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/tasks.html">mjlab.tasks</a></li>
 </ul>
 </details></li>
 </ul>
-<p aria-level="2" class="caption" role="heading"><span class="caption-text">Core Concepts</span></p>
-<ul class="nav bd-sidenav">
-<li class="toctree-l1"><a class="reference internal" href="randomization.html">Domain Randomization</a></li>
-<li class="toctree-l1"><a class="reference internal" href="nan_guard.html">NaN Guard</a></li>
-<li class="toctree-l1"><a class="reference internal" href="observation.html">Observation History and Delay</a></li>
-<li class="toctree-l1"><a class="reference internal" href="actuators.html">Actuators</a></li>
-<li class="toctree-l1"><a class="reference internal" href="sensors.html">Sensors</a></li>
-<li class="toctree-l1"><a class="reference internal" href="raycast_sensor.html">RayCast Sensor</a></li>
-<li class="toctree-l1"><a class="reference internal" href="distributed_training.html">Distributed Training</a></li>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Further Reading</span></p>
+<ul class="current nav bd-sidenav">
+<li class="toctree-l1 current active"><a class="current reference internal" href="#">Why mjlab?</a></li>
+<li class="toctree-l1"><a class="reference internal" href="migration_isaac_lab.html">Migrating from Isaac Lab</a></li>
+<li class="toctree-l1"><a class="reference internal" href="faq.html">FAQ &amp; Troubleshooting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="research.html">Research</a></li>
+<li class="toctree-l1"><a class="reference internal" href="changelog.html">Changelog</a></li>
 </ul>
 
     </div>
@@ -423,11 +462,9 @@ document.write(`
             </div>
             <nav aria-label="Page">
                 <ul class="visible nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#the-problem">The Problem</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#our-solution">Our Solution</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#philosophy">Philosophy</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#when-to-use-mjlab">When to Use mjlab</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#the-bottom-line">The Bottom Line</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#design-philosophy">Design philosophy</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#scope">Scope</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#comparison">Comparison</a></li>
 </ul>
             </nav>
         </div>
@@ -441,120 +478,91 @@ document.write(`
                   
   <section id="why-mjlab">
 <span id="motivation"></span><h1>Why mjlab?<a class="headerlink" href="#why-mjlab" title="Link to this heading">#</a></h1>
-<section id="the-problem">
-<h2>The Problem<a class="headerlink" href="#the-problem" title="Link to this heading">#</a></h2>
-<p>GPU-accelerated robotics simulation has great tools,
-but each has tradeoffs:</p>
-<p><strong>Isaac Lab</strong>: Excellent API and RL abstractions, but
-heavy installation, slow startup, and Omniverse overhead
-make rapid iteration painful.</p>
-<p><strong>MJX</strong>: Fast and lightweight, but JAX’s learning curve
-and poor collision scaling (if using the <code class="docutils literal notranslate"><span class="pre">jax</span></code>
-<a class="reference external" href="https://github.com/google-deepmind/mujoco/blob/32e08f9507c9bdc5a1a5411c6fa9f0346542b038/mjx/mujoco/mjx/_src/types.py#L28-L33">implementation</a>
-rather than the <code class="docutils literal notranslate"><span class="pre">warp</span></code> one) limit adoption.</p>
-<p><strong>Newton</strong>: Brand new generic simulator supporting
-multiple solvers (MuJoCo, VBD, etc.) with USD-based
-format instead of MJCF/XML. Doesn’t yet have the
-ecosystem and community resources that MuJoCo has built
-over the years.</p>
+<p>Reinforcement learning has become a powerful tool for training robot
+controllers in simulation and transferring them to real hardware. The
+fidelity of this pipeline hinges on getting simulation details right.</p>
+<p>Several frameworks address this.
+<a class="reference external" href="https://github.com/isaac-sim/IsaacLab">Isaac Lab</a>
+provides a comprehensive manager-based API for composing RL environments,
+but requires the Omniverse runtime, which adds installation complexity and
+startup latency.
+<a class="reference external" href="https://playground.mujoco.org/">MuJoCo Playground</a> takes the opposite
+approach: minimal
+abstractions and monolithic environment definitions that are easy to hack
+and quick to prototype, but code duplication across robots and tasks makes
+multi-task codebases difficult to maintain. There remains a gap for a
+framework that is both lightweight and built on a proven orchestration API
+with access to best-in-class physics.</p>
+<p>mjlab fills this gap. It adopts Isaac Lab’s manager-based design, where
+users compose self-contained building blocks for observations, rewards,
+events, and commands, and pairs it with MuJoCo Warp for GPU-accelerated
+physics simulation. The result is a framework with minimal dependencies,
+fast startup, direct access to native MuJoCo model and data structures,
+and a PyTorch-native interface for policy training.</p>
+<section id="design-philosophy">
+<h2>Design philosophy<a class="headerlink" href="#design-philosophy" title="Link to this heading">#</a></h2>
+<p>mjlab is designed around three core engineering commitments:</p>
+<ol class="arabic simple">
+<li><p><strong>Minimal installation friction.</strong> A single
+<code class="docutils literal notranslate"><span class="pre">uvx</span> <span class="pre">--from</span> <span class="pre">mjlab</span> <span class="pre">--refresh</span> <span class="pre">demo</span></code> command is enough to run the
+framework. No heavyweight runtimes, no multi-gigabyte downloads. The
+dependency footprint is kept intentionally small.</p></li>
+<li><p><strong>Transparent and inspectable physics.</strong> mjlab targets a single physics
+stack, MuJoCo Warp, to prioritize simulation transparency and
+debuggability. The framework exposes MuJoCo-native <code class="docutils literal notranslate"><span class="pre">MjModel</span></code> and
+<code class="docutils literal notranslate"><span class="pre">MjData</span></code> structures for direct inspection and state access.
+Cross-simulator portability is a non-goal; mjlab favors precise control
+and interpretability over backend generality.</p></li>
+<li><p><strong>Tight MuJoCo ecosystem integration.</strong> Users work directly with MuJoCo
+models and conventions. MJCF files, MuJoCo Menagerie assets, and
+standard MuJoCo tooling all work without translation layers.</p></li>
+</ol>
 </section>
-<section id="our-solution">
-<h2>Our Solution<a class="headerlink" href="#our-solution" title="Link to this heading">#</a></h2>
-<p><strong>mjlab = Isaac Lab’s API + MuJoCo’s simplicity +
-GPU acceleration</strong></p>
-<p>We took Isaac Lab’s proven manager-based architecture
-and RL abstractions, then built them directly on MuJoCo
-Warp. No translation layers, no Omniverse overhead.
-Just fast, transparent physics.</p>
-<dl>
-<dt>Why Not Use Isaac Lab with Newton?</dt><dd><p>Isaac Lab recently added
-<a class="reference external" href="https://github.com/isaac-sim/IsaacLab/tree/dev/newton">experimental Newton support</a>,
-which is great for existing Isaac users who want to
-try MuJoCo via Newton’s backend.</p>
-<p>If you want a comprehensive platform (RL, imitation
-learning, photorealistic rendering, etc.), use Isaac
-Lab. If you want a focused tool for RL and sim2real
-with MuJoCo, use mjlab.</p>
-</dd>
-<dt>Why Not Add MuJoCo Warp to Isaac Lab?</dt><dd><p>This would be fantastic for the ecosystem!
-NVIDIA’s team is exploring this with their
-recent <a class="reference external" href="https://github.com/isaac-sim/IsaacLab/tree/dev/newton">experimental Newton integration</a>,
-which is exciting.</p>
-<p>But for us, we wanted to start with something
-more focused that we could realistically
-maintain. Isaac Lab is architected around
-Omniverse/Isaac Sim’s powerful capabilities,
-which makes sense given everything it supports.
-Integrating MuJoCo Warp there would mean working
-within that broader framework and supporting
-use cases beyond our scope.</p>
-<p>Maintaining multi-backend compatibility
-naturally involves tradeoffs in complexity
-and dependency management. By starting fresh, we could:</p>
-<ul class="simple">
-<li><p>Write a lean codebase optimized specifically for MuJoCo Warp</p></li>
-<li><p>Keep dependencies minimal and installation fast</p></li>
-<li><p>Maintain direct access to native mjModel/mjData structures</p></li>
-<li><p>Iterate quickly without navigating a larger platform’s constraints</p></li>
-</ul>
-<p>Think of mjlab as a love letter to Isaac
-Lab’s brilliant API design. We’re bringing
-those manager-based abstractions to researchers
-who want something smaller and MuJoCo-specific.
-It’s complementary, not competitive.</p>
-</dd>
-</dl>
+<section id="scope">
+<h2>Scope<a class="headerlink" href="#scope" title="Link to this heading">#</a></h2>
+<p>mjlab provides infrastructure for rigid-body robot learning. It includes
+depth and raycast sensors for geometric perception. High-fidelity RGB
+rendering is out of scope. This does not preclude vision-based policies:
+a common approach is to train privileged policies using full state, then
+distill into vision-based controllers using external rendering.</p>
+<p>The framework is intended to be extended to custom robots, tasks, sensors,
+and actuators. It ships with reference implementations of velocity tracking,
+motion imitation, and manipulation tasks.</p>
 </section>
-<section id="philosophy">
-<h2>Philosophy<a class="headerlink" href="#philosophy" title="Link to this heading">#</a></h2>
-<p><strong>Bare Metal Performance</strong></p>
-<ul class="simple">
-<li><p>Direct MuJoCo Warp integration, no translation layers</p></li>
-<li><p>Native mjModel/mjData structures MuJoCo users know and love</p></li>
-<li><p>GPU-accelerated with minimal overhead</p></li>
-</ul>
-<p><strong>Developer Experience First</strong></p>
-<ul class="simple">
-<li><p>One-line installation: <code class="docutils literal notranslate"><span class="pre">uvx</span> <span class="pre">--from</span> <span class="pre">mjlab</span> <span class="pre">demo</span></code></p></li>
-<li><p>Blazing fast startup</p></li>
-<li><p>Standard Python debugging (pdb anywhere!)</p></li>
-<li><p>Fast iteration cycles</p></li>
-</ul>
-<p><strong>Focused Scope</strong></p>
-<ul class="simple">
-<li><p>Rigid-body robotics and RL, not trying to do everything</p></li>
-<li><p>Clean, maintainable codebase over feature bloat</p></li>
-<li><p>MuJoCo-native implementation, not a generic wrapper</p></li>
-</ul>
-</section>
-<section id="when-to-use-mjlab">
-<h2>When to Use mjlab<a class="headerlink" href="#when-to-use-mjlab" title="Link to this heading">#</a></h2>
-<p><strong>Use mjlab if you want:</strong></p>
-<ul class="simple">
-<li><p>Fast iteration and debugging</p></li>
-<li><p>Direct MuJoCo physics control</p></li>
-<li><p>Proven RL abstractions (Isaac Lab-style)</p></li>
-<li><p>GPU acceleration without heavyweight dependencies</p></li>
-<li><p>Simple installation and deployment</p></li>
-</ul>
-<p><strong>Use Isaac Lab if you need:</strong></p>
-<ul class="simple">
-<li><p>Photorealistic rendering</p></li>
-<li><p>USD pipeline integration</p></li>
-<li><p>Omniverse ecosystem features</p></li>
-</ul>
-<p><strong>Use Newton if you need:</strong></p>
-<ul class="simple">
-<li><p>Multi-physics solver support (e.g., deformables)</p></li>
-<li><p>Differentiable simulation</p></li>
-</ul>
-</section>
-<section id="the-bottom-line">
-<h2>The Bottom Line<a class="headerlink" href="#the-bottom-line" title="Link to this heading">#</a></h2>
-<p>mjlab isn’t trying to replace everything. It’s
-built for researchers who love MuJoCo’s simplicity
-and want Isaac Lab’s RL abstractions with GPU acceleration,
-minus the overhead.</p>
+<section id="comparison">
+<h2>Comparison<a class="headerlink" href="#comparison" title="Link to this heading">#</a></h2>
+<div class="pst-scrollable-table-container"><table class="table">
+<colgroup>
+<col style="width: 25.0%" />
+<col style="width: 25.0%" />
+<col style="width: 50.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Framework</p></th>
+<th class="head"><p>Strengths</p></th>
+<th class="head"><p>Best for</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><strong>mjlab</strong></p></td>
+<td><p>Lightweight, fast iteration, native MuJoCo, PyTorch</p></td>
+<td><p>MuJoCo users who want structured RL environments with GPU acceleration</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>Isaac Lab</strong></p></td>
+<td><p>Photorealistic rendering, USD pipeline, Omniverse ecosystem</p></td>
+<td><p>Projects that need Isaac Sim capabilities</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>MuJoCo Playground</strong></p></td>
+<td><p>Minimal abstractions, easy to hack, quick prototyping</p></td>
+<td><p>One-off experiments and rapid iteration on single tasks</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>Newton</strong></p></td>
+<td><p>Multi-physics solvers (deformables, VBD), differentiable simulation</p></td>
+<td><p>Projects that need solver flexibility beyond rigid-body MuJoCo</p></td>
+</tr>
+</tbody>
+</table>
+</div>
 </section>
 </section>
 
@@ -570,20 +578,20 @@ minus the overhead.</p>
                   
 <div class="prev-next-area">
     <a class="left-prev"
-       href="migration_isaac_lab.html"
+       href="api/tasks.html"
        title="previous page">
       <i class="fa-solid fa-angle-left"></i>
       <div class="prev-next-info">
         <p class="prev-next-subtitle">previous</p>
-        <p class="prev-next-title">Migrating from Isaac Lab</p>
+        <p class="prev-next-title">mjlab.tasks</p>
       </div>
     </a>
     <a class="right-next"
-       href="faq.html"
+       href="migration_isaac_lab.html"
        title="next page">
       <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">FAQ &amp; Troubleshooting</p>
+        <p class="prev-next-title">Migrating from Isaac Lab</p>
       </div>
       <i class="fa-solid fa-angle-right"></i>
     </a>
@@ -603,11 +611,9 @@ minus the overhead.</p>
   </div>
   <nav class="bd-toc-nav page-toc">
     <ul class="visible nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#the-problem">The Problem</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#our-solution">Our Solution</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#philosophy">Philosophy</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#when-to-use-mjlab">When to Use mjlab</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#the-bottom-line">The Bottom Line</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#design-philosophy">Design philosophy</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#scope">Scope</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#comparison">Comparison</a></li>
 </ul>
   </nav></div>
 
@@ -641,7 +647,7 @@ By The mjlab Developers
   
   <div class="footer-item">
     <p class="last-updated">
-  Last updated on Feb 24, 2026.
+  Last updated on Mar 14, 2026.
   <br/>
 </p>
   </div>
