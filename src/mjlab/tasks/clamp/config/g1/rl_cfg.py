@@ -51,7 +51,7 @@ def unitree_g1_clamp_student_rl_ppo_runner_cfg() -> RslRlOnPolicyRunnerCfg:
     seed=1,
     policy=RslRlPpoActorCriticCfg(
       class_name="ClampStudentActorCritic",
-      init_noise_std=0.4,
+      init_noise_std=0.3,
       actor_obs_normalization=True,
       critic_obs_normalization=True,
       actor_hidden_dims=(512, 512, 256, 128),
@@ -89,7 +89,7 @@ def unitree_g1_clamp_student_distillation_runner_cfg() -> RslRlDistillationRunne
       teacher_obs_normalization=True,
       student_hidden_dims=(512, 512, 256, 128),
       activation="elu",
-      init_noise_std=0.4,
+      init_noise_std=0.3,
     ),
     algorithm=RslRlDistillationAlgorithmCfg(
       class_name="Distillation",

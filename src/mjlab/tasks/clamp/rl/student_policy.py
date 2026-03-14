@@ -30,8 +30,6 @@ class ClampStudentActorCritic(ActorCritic):
           f"actor_obs_normalizer.{key[len(self._DISTILL_NORMALIZER_PREFIX) :]}"
         )
         actor_state_dict[mapped_key] = value
-      elif key in ("std", "log_std"):
-        actor_state_dict[key] = value
 
     if len(actor_state_dict) == 0:
       raise ValueError(
@@ -42,9 +40,7 @@ class ClampStudentActorCritic(ActorCritic):
     required_actor_keys = {
       key
       for key in model_keys
-      if key.startswith("actor.")
-      or key.startswith("actor_obs_normalizer.")
-      or key in ("std", "log_std")
+      if key.startswith("actor.") or key.startswith("actor_obs_normalizer.")
     }
 
     provided_actor_keys = set(actor_state_dict.keys())
