@@ -59,7 +59,7 @@
     <link rel="prev" title="Architecture Overview" href="../architecture_overview.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-    <meta name="docbuild:last-update" content="Mar 14, 2026"/>
+    <meta name="docbuild:last-update" content="Apr 09, 2026"/>
   </head>
   
   
@@ -213,6 +213,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../randomization.html">Domain Randomization</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../curriculum.html">Curriculum</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../metrics.html">Metrics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../recorders.html">Recorders</a></li>
 </ul>
 <p aria-level="2" class="caption" role="heading"><span class="caption-text">Training &amp; Debugging</span></p>
 <ul class="nav bd-sidenav">
@@ -606,13 +607,11 @@ everything into a shared <code class="docutils literal notranslate"><span class=
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">spec_fn</span> <span class="o">=</span> <span class="k">lambda</span><span class="p">:</span> <span class="n">mujoco</span><span class="o">.</span><span class="n">MjSpec</span><span class="o">.</span><span class="n">from_file</span><span class="p">(</span><span class="s2">&quot;robot.xml&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>For anything more involved, use a regular function. The asset zoo robots
-all follow this pattern: load the XML, attach mesh assets, and return
-the spec.</p>
+<p>For anything more involved, use a regular function. MuJoCo resolves mesh
+assets from disk automatically, so <code class="docutils literal notranslate"><span class="pre">get_spec</span></code> only needs to load the
+XML:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">get_spec</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">mujoco</span><span class="o">.</span><span class="n">MjSpec</span><span class="p">:</span>
-    <span class="n">spec</span> <span class="o">=</span> <span class="n">mujoco</span><span class="o">.</span><span class="n">MjSpec</span><span class="o">.</span><span class="n">from_file</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">ROBOT_XML</span><span class="p">))</span>
-    <span class="n">spec</span><span class="o">.</span><span class="n">assets</span> <span class="o">=</span> <span class="n">get_assets</span><span class="p">(</span><span class="n">spec</span><span class="o">.</span><span class="n">meshdir</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">spec</span>
+    <span class="k">return</span> <span class="n">mujoco</span><span class="o">.</span><span class="n">MjSpec</span><span class="o">.</span><span class="n">from_file</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">ROBOT_XML</span><span class="p">))</span>
 </pre></div>
 </div>
 <p>Because <code class="docutils literal notranslate"><span class="pre">spec_fn</span></code> is an arbitrary callable, you can perform any
@@ -898,7 +897,7 @@ By The mjlab Developers
   
   <div class="footer-item">
     <p class="last-updated">
-  Last updated on Mar 14, 2026.
+  Last updated on Apr 09, 2026.
   <br/>
 </p>
   </div>

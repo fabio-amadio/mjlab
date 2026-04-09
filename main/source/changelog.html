@@ -58,7 +58,7 @@
     <link rel="prev" title="Research" href="research.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-    <meta name="docbuild:last-update" content="Mar 14, 2026"/>
+    <meta name="docbuild:last-update" content="Apr 09, 2026"/>
   </head>
   
   
@@ -212,6 +212,7 @@
 <li class="toctree-l1"><a class="reference internal" href="randomization.html">Domain Randomization</a></li>
 <li class="toctree-l1"><a class="reference internal" href="curriculum.html">Curriculum</a></li>
 <li class="toctree-l1"><a class="reference internal" href="metrics.html">Metrics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="recorders.html">Recorders</a></li>
 </ul>
 <p aria-level="2" class="caption" role="heading"><span class="caption-text">Training &amp; Debugging</span></p>
 <ul class="nav bd-sidenav">
@@ -504,6 +505,34 @@ document.write(`
 <section id="added">
 <h3>Added<a class="headerlink" href="#added" title="Link to this heading">#</a></h3>
 <ul class="simple">
+<li><p>Added <code class="docutils literal notranslate"><span class="pre">ActuatorCfg.viscous_damping</span></code> for passive velocity proportional
+damping (<code class="docutils literal notranslate"><span class="pre">f</span> <span class="pre">=</span> <span class="pre">-b·v</span></code>), distinct from the PD derivative gain <code class="docutils literal notranslate"><span class="pre">damping</span></code>
+used by position and velocity actuators. Maps to <code class="docutils literal notranslate"><span class="pre">&lt;joint</span> <span class="pre">damping&gt;</span></code> for
+JOINT transmission and <code class="docutils literal notranslate"><span class="pre">&lt;tendon</span> <span class="pre">damping&gt;</span></code> for TENDON transmission.
+Defaults to <code class="docutils literal notranslate"><span class="pre">None</span></code> (preserves the XML value).</p></li>
+<li><p>Added <a class="reference internal" href="api/managers.html#mjlab.managers.RecorderManager" title="mjlab.managers.RecorderManager"><code class="xref py py-class docutils literal notranslate"><span class="pre">RecorderManager</span></code></a> for logging observations,
+actions, or arbitrary environment data during rollouts. Implement a
+<a class="reference internal" href="api/managers.html#mjlab.managers.RecorderTerm" title="mjlab.managers.RecorderTerm"><code class="xref py py-class docutils literal notranslate"><span class="pre">RecorderTerm</span></code></a> subclass and register it in the
+<code class="docutils literal notranslate"><span class="pre">recorders</span></code> dict on <code class="docutils literal notranslate"><span class="pre">ManagerBasedRlEnvCfg</span></code>. The manager provides
+<code class="docutils literal notranslate"><span class="pre">record_pre_reset</span></code>, <code class="docutils literal notranslate"><span class="pre">record_post_reset</span></code>, and <code class="docutils literal notranslate"><span class="pre">record_post_step</span></code>
+lifecycle hooks with no opinion on how data is stored.</p></li>
+<li><p>Added <code class="xref py py-func docutils literal notranslate"><span class="pre">termination_curriculum()</span></code> for
+scheduling changes to termination term parameters during training,
+matching the existing <code class="docutils literal notranslate"><span class="pre">reward_curriculum</span></code> pattern. Both now share a
+single internal engine with init-time validation of stage ordering,
+field existence, and param keys.</p></li>
+<li><p>Added <code class="docutils literal notranslate"><span class="pre">reduce</span></code> field to <code class="docutils literal notranslate"><span class="pre">MetricsTermCfg</span></code>. Setting <code class="docutils literal notranslate"><span class="pre">reduce=&quot;last&quot;</span></code>
+reports the value from the final step of the episode rather than the
+episode mean, which is useful for binary success metrics.</p></li>
+<li><p>Added <code class="xref py py-class docutils literal notranslate"><span class="pre">RelativeJointPositionAction</span></code> for
+joint position control relative to the current configuration. The target is
+<code class="docutils literal notranslate"><span class="pre">current_pos</span> <span class="pre">+</span> <span class="pre">action</span> <span class="pre">*</span> <span class="pre">scale</span></code>, so a zero action holds the current
+configuration rather than commanding the default pose.</p></li>
+<li><p>Added <code class="xref py py-func docutils literal notranslate"><span class="pre">pair_friction()</span></code> for randomizing geom-pair
+friction overrides (<code class="docutils literal notranslate"><span class="pre">pair_friction</span></code> in <code class="docutils literal notranslate"><span class="pre">mjModel</span></code>).</p></li>
+<li><p>Added <code class="docutils literal notranslate"><span class="pre">STAIRS_TERRAINS_CFG</span></code> terrain preset for progressive stair
+curriculum training and <code class="docutils literal notranslate"><span class="pre">&#64;terrain_preset</span></code> decorator for composing
+terrain configurations from reusable presets.</p></li>
 <li><p>Added cartpole balance and swingup tasks (<code class="docutils literal notranslate"><span class="pre">Mjlab-Cartpole-Balance</span></code> and
 <code class="docutils literal notranslate"><span class="pre">Mjlab-Cartpole-Swingup</span></code>) with a <a class="reference internal" href="tutorials/cartpole.html#tutorial-cartpole"><span class="std std-ref">tutorial</span></a>
 that walks through building an environment from scratch.</p></li>
@@ -513,8 +542,6 @@ BeyondMimic repository, which produced incompatible NPZ files when used
 with mjlab (<a class="extlink-issue reference external" href="https://github.com/mujocolab/mjlab/issues/777">#777</a>).</p></li>
 <li><p>Added <code class="docutils literal notranslate"><span class="pre">margin</span></code>, <code class="docutils literal notranslate"><span class="pre">gap</span></code>, and <code class="docutils literal notranslate"><span class="pre">solmix</span></code> fields to <code class="docutils literal notranslate"><span class="pre">CollisionCfg</span></code>
 for per geom contact parameter configuration (<a class="extlink-issue reference external" href="https://github.com/mujocolab/mjlab/issues/766">#766</a>).</p></li>
-<li><p>Added <code class="docutils literal notranslate"><span class="pre">DelayedBuiltinActuatorGroup</span></code> that fuses delayed builtin actuators
-sharing the same delay configuration into a single buffer operation.</p></li>
 <li><p>NaN guard now captures mocap body poses (<code class="docutils literal notranslate"><span class="pre">mocap_pos</span></code>, <code class="docutils literal notranslate"><span class="pre">mocap_quat</span></code>)
 when the model has mocap bodies, enabling full state reconstruction in
 the dump viewer for fixed-base entities.</p></li>
@@ -525,11 +552,52 @@ to <code class="docutils literal notranslate"><span class="pre">EntityData</span
 (projected through the transmission). <code class="docutils literal notranslate"><span class="pre">qfrc_external</span></code> recovers the
 generalized force from body external wrenches (<code class="docutils literal notranslate"><span class="pre">xfrc_applied</span></code>)
 (<a class="extlink-issue reference external" href="https://github.com/mujocolab/mjlab/issues/776">#776</a>).</p></li>
+<li><p>Added <code class="docutils literal notranslate"><span class="pre">RewardBarPanel</span></code> to the Viser viewer, showing horizontal bars for
+each reward term with a running mean over ~1 second (<a class="extlink-issue reference external" href="https://github.com/mujocolab/mjlab/issues/800">#800</a>).</p></li>
+<li><p>Added <code class="docutils literal notranslate"><span class="pre">per_substep</span></code> flag to <code class="docutils literal notranslate"><span class="pre">MetricsTermCfg</span></code> for evaluating metrics
+once per physics substep inside the decimation loop. The per substep
+values are averaged within each environment step, so episode averages
+remain comparable to regular per step metrics.</p></li>
+<li><p>Added <code class="docutils literal notranslate"><span class="pre">project-instinct/InstinctMJ</span></code> to the research page’s list of
+projects built on mjlab.</p></li>
+<li><p>Added a Checkpoints tab to the Viser play viewer for hot-swapping
+checkpoints without restarting. Works with local directories and W&amp;B
+runs (<a class="extlink-issue reference external" href="https://github.com/mujocolab/mjlab/issues/751">#751</a>). Contribution by &#64;omarrayyann.</p></li>
+<li><p>Added <code class="docutils literal notranslate"><span class="pre">&quot;segmentation&quot;</span></code> camera data type for per-pixel geom ID output
+alongside RGB and depth, and a multi-cube goal-conditioned lifting task
+(<code class="docutils literal notranslate"><span class="pre">Mjlab-Multi-Cube-Seg-Yam</span></code>) that uses it (<a class="extlink-issue reference external" href="https://github.com/mujocolab/mjlab/issues/862">#862</a>).
+Contribution by &#64;pthangeda.</p></li>
 </ul>
 </section>
 <section id="changed">
 <h3>Changed<a class="headerlink" href="#changed" title="Link to this heading">#</a></h3>
 <ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">ActuatorCfg.armature</span></code> and <code class="docutils literal notranslate"><span class="pre">ActuatorCfg.frictionloss</span></code> now default to
+<code class="docutils literal notranslate"><span class="pre">None</span></code> instead of <code class="docutils literal notranslate"><span class="pre">0.0</span></code>. <code class="docutils literal notranslate"><span class="pre">None</span></code> preserves the value defined in the
+XML. Previously, builtin actuators would silently overwrite XML joint and
+tendon properties with zero when these fields were not explicitly set.
+To restore the old behavior, pass <code class="docutils literal notranslate"><span class="pre">armature=0.0</span></code> or <code class="docutils literal notranslate"><span class="pre">frictionloss=0.0</span></code>
+explicitly.</p></li>
+<li><p>Actuator delay is now configured inline on any <code class="docutils literal notranslate"><span class="pre">ActuatorCfg</span></code> subclass
+(e.g. <code class="docutils literal notranslate"><span class="pre">BuiltinPositionActuatorCfg(...,</span> <span class="pre">delay_min_lag=2,</span> <span class="pre">delay_max_lag=5)</span></code>)
+instead of wrapping with <code class="docutils literal notranslate"><span class="pre">DelayedActuatorCfg</span></code>. <code class="docutils literal notranslate"><span class="pre">DelayedActuator</span></code>,
+<code class="docutils literal notranslate"><span class="pre">DelayedActuatorCfg</span></code>, and <code class="docutils literal notranslate"><span class="pre">DelayedBuiltinActuatorGroup</span></code> are removed.</p></li>
+<li><p>Removed <code class="docutils literal notranslate"><span class="pre">delay_target</span></code> from <code class="docutils literal notranslate"><span class="pre">ActuatorCfg</span></code>. Delay now always applies to
+the actuator’s <code class="docutils literal notranslate"><span class="pre">command_field</span></code> automatically. Multi-target delay
+(<code class="docutils literal notranslate"><span class="pre">delay_target=(&quot;position&quot;,</span> <span class="pre">&quot;velocity&quot;)</span></code>) is no longer supported.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">XmlPositionActuatorCfg</span></code>, <code class="docutils literal notranslate"><span class="pre">XmlVelocityActuatorCfg</span></code>, <code class="docutils literal notranslate"><span class="pre">XmlMotorActuatorCfg</span></code>,
+and <code class="docutils literal notranslate"><span class="pre">XmlMuscleActuatorCfg</span></code> are replaced by a single <code class="docutils literal notranslate"><span class="pre">XmlActuatorCfg</span></code> that auto
+detects the actuator type from XML. Pass <code class="docutils literal notranslate"><span class="pre">command_field=...</span></code> to override detection.</p></li>
+<li><p>Replaced the viser viewer internals with the <code class="docutils literal notranslate"><span class="pre">mjviser</span></code> package. Scene
+creation, mesh conversion, and overlay rendering (contacts, forces,
+inertia, tendons, joints, frames) are now provided by mjviser. The viewer
+exposes a new Visualization tab for overlay controls and a Groups tab for
+geom/site visibility. Debug visualization and warp tensor conversion remain
+in mjlab’s <code class="docutils literal notranslate"><span class="pre">MjlabViserScene</span></code> subclass (<a class="extlink-issue reference external" href="https://github.com/mujocolab/mjlab/issues/839">#839</a>).</p></li>
+<li><p>In curriculum terrain mode, each terrain type now gets exactly one column
+(<code class="docutils literal notranslate"><span class="pre">num_cols</span></code> is set to <code class="docutils literal notranslate"><span class="pre">len(sub_terrains)</span></code>). The <code class="docutils literal notranslate"><span class="pre">proportion</span></code> field
+now controls robot spawning distribution across columns rather than column
+count. Random mode is unchanged (<a class="extlink-issue reference external" href="https://github.com/mujocolab/mjlab/issues/811">#811</a>).</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">BoxSteppingStonesTerrainCfg</span></code> stone size now decreases with difficulty,
 interpolating from the large end of <code class="docutils literal notranslate"><span class="pre">stone_size_range</span></code> at difficulty 0
 to the small end at difficulty 1 (<a class="extlink-issue reference external" href="https://github.com/mujocolab/mjlab/issues/785">#785</a>).</p></li>
@@ -547,6 +615,23 @@ Use <code class="docutils literal notranslate"><span class="pre">qfrc_actuator</
 <section id="fixed">
 <h3>Fixed<a class="headerlink" href="#fixed" title="Link to this heading">#</a></h3>
 <ul class="simple">
+<li><p>Fixed ghost geom filtering in the Viser viewer. Ghost geoms were selected
+by collision flags, so collision-disabled robot geoms appeared as ghosts.
+The viewer now uses visual alpha to determine which geoms to render.</p></li>
+<li><p>Scene now warns when an attached entity or terrain spec has non-default
+<code class="docutils literal notranslate"><span class="pre">&lt;option&gt;</span></code> fields (e.g. <code class="docutils literal notranslate"><span class="pre">&lt;flag</span> <span class="pre">contact=&quot;disable&quot;/&gt;</span></code>), which are
+silently dropped by <code class="docutils literal notranslate"><span class="pre">MjSpec.attach()</span></code>. Use <code class="docutils literal notranslate"><span class="pre">MujocoCfg</span></code> to set
+simulation options instead (<a class="extlink-issue reference external" href="https://github.com/mujocolab/mjlab/issues/885">#885</a>).</p></li>
+<li><p>Fixed <code class="docutils literal notranslate"><span class="pre">SceneEntityCfg</span></code> names and IDs ordering mismatch when
+<code class="docutils literal notranslate"><span class="pre">preserve_order=False</span></code> (<a class="extlink-issue reference external" href="https://github.com/mujocolab/mjlab/issues/876">#876</a>). Contribution by &#64;jsw7460.</p></li>
+<li><p>Fixed ONNX export path resolution in the velocity, manipulation, and
+tracking runners when a parent directory name contains the word
+<code class="docutils literal notranslate"><span class="pre">&quot;model&quot;</span></code> (<a class="extlink-issue reference external" href="https://github.com/mujocolab/mjlab/issues/867">#867</a>). Contribution by &#64;gokulp01.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">export-scene</span></code> now writes only referenced assets and places them
+correctly under the output directory. Previously, asset keys containing
+path traversal could write files outside the output directory, and all
+spec assets were included regardless of whether the scene XML referenced
+them (<a class="extlink-issue reference external" href="https://github.com/mujocolab/mjlab/issues/858">#858</a>).</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">electrical_power_cost</span></code> now uses <code class="docutils literal notranslate"><span class="pre">qfrc_actuator</span></code> (joint space) instead
 of <code class="docutils literal notranslate"><span class="pre">actuator_force</span></code> (actuation space) for mechanical power computation.
 Previously the reward was incorrect for actuators with gear ratios other
@@ -616,6 +701,17 @@ migrated on load.</p></li>
 to bodies with configurable duration and optional application point offset.</p></li>
 <li><p>ONNX auto-export and metadata attachment for manipulation tasks (lift cube)
 on every checkpoint save, matching the velocity and tracking task behavior.</p></li>
+<li><p>Multi-frame <code class="docutils literal notranslate"><span class="pre">RayCastSensor</span></code>: pass a tuple of <code class="docutils literal notranslate"><span class="pre">ObjRef</span></code> to <code class="docutils literal notranslate"><span class="pre">frame</span></code> for
+per-site raycasting with independent body exclusion. New properties:
+<code class="docutils literal notranslate"><span class="pre">num_frames</span></code>, <code class="docutils literal notranslate"><span class="pre">num_rays_per_frame</span></code>. New <code class="docutils literal notranslate"><span class="pre">RayCastData</span></code> fields:
+<code class="docutils literal notranslate"><span class="pre">frame_pos_w</span></code> and <code class="docutils literal notranslate"><span class="pre">frame_quat_w</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">RingPatternCfg</span></code> ray pattern for concentric ring sampling around each
+frame.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">TerrainHeightSensor</span></code>, a <code class="docutils literal notranslate"><span class="pre">RayCastSensor</span></code> subclass that computes
+per-frame vertical clearance above terrain (<code class="docutils literal notranslate"><span class="pre">sensor.data.heights</span></code>).
+Velocity task configs now use it for <code class="docutils literal notranslate"><span class="pre">feet_clearance</span></code>,
+<code class="docutils literal notranslate"><span class="pre">feet_swing_height</span></code>, and <code class="docutils literal notranslate"><span class="pre">foot_height</span></code>, replacing the previous
+world-Z proxy that was incorrect on rough terrain.</p></li>
 <li><p>Cloud training support via <a class="reference external" href="https://skypilot.readthedocs.io/">SkyPilot</a>
 and Lambda Cloud, with documentation covering setup, monitoring, and
 cost management.</p></li>
@@ -966,7 +1062,7 @@ By The mjlab Developers
   
   <div class="footer-item">
     <p class="last-updated">
-  Last updated on Mar 14, 2026.
+  Last updated on Apr 09, 2026.
   <br/>
 </p>
   </div>
