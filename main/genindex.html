@@ -56,7 +56,7 @@
     <link rel="search" title="Search" href="search.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-    <meta name="docbuild:last-update" content="Apr 09, 2026"/>
+    <meta name="docbuild:last-update" content="May 19, 2026"/>
   </head>
   
   
@@ -189,6 +189,7 @@
 <li class="toctree-l1"><a class="reference internal" href="source/architecture_overview.html">Architecture Overview</a></li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="source/entity/index.html">Entity</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
 <li class="toctree-l2"><a class="reference internal" href="source/entity/entity_data.html">Entity Data</a></li>
+<li class="toctree-l2"><a class="reference internal" href="source/entity/per_world_mesh.html">Heterogeneous Worlds</a></li>
 </ul>
 </details></li>
 <li class="toctree-l1"><a class="reference internal" href="source/actuators.html">Actuators</a></li>
@@ -586,10 +587,10 @@ document.write(`
 </li>
       <li><a href="source/api/terrains.html#mjlab.terrains.BoxRandomSpreadTerrainCfg.add_floor">add_floor (mjlab.terrains.BoxRandomSpreadTerrainCfg attribute)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="source/api/terrains.html#mjlab.terrains.TerrainGeneratorCfg.add_lights">add_lights (mjlab.terrains.TerrainGeneratorCfg attribute)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="source/api/rl.html#mjlab.rl.RslRlOnPolicyRunnerCfg.algorithm">algorithm (mjlab.rl.RslRlOnPolicyRunnerCfg attribute)</a>
 </li>
       <li><a href="source/api/terrains.html#mjlab.terrains.HfWaveTerrainCfg.amplitude_range">amplitude_range (mjlab.terrains.HfWaveTerrainCfg attribute)</a>
@@ -619,6 +620,8 @@ document.write(`
       <li><a href="source/api/viewer.html#mjlab.viewer.ViewerConfig.OriginType.ASSET_ROOT">ASSET_ROOT (mjlab.viewer.ViewerConfig.OriginType attribute)</a>
 </li>
       <li><a href="source/api/viewer.html#mjlab.viewer.ViewerConfig.OriginType.AUTO">AUTO (mjlab.viewer.ViewerConfig.OriginType attribute)</a>
+</li>
+      <li><a href="source/api/envs.html#mjlab.envs.ManagerBasedRlEnvCfg.auto_reset">auto_reset (mjlab.envs.ManagerBasedRlEnvCfg attribute)</a>
 </li>
       <li><a href="source/api/viewer.html#mjlab.viewer.ViewerConfig.azimuth">azimuth (mjlab.viewer.ViewerConfig attribute)</a>
 </li>
@@ -866,6 +869,8 @@ document.write(`
       </ul></li>
       <li><a href="source/api/rl.html#mjlab.rl.RslRlModelCfg.cnn_cfg">cnn_cfg (mjlab.rl.RslRlModelCfg attribute)</a>
 </li>
+      <li><a href="source/api/scene.html#mjlab.scene.Scene.collect_variant_info">collect_variant_info() (mjlab.scene.Scene method)</a>
+</li>
       <li><a href="source/api/entity.html#mjlab.entity.EntityCfg.collisions">collisions (mjlab.entity.EntityCfg attribute)</a>
 </li>
       <li><a href="source/api/terrains.html#mjlab.terrains.TerrainGeneratorCfg.color_scheme">color_scheme (mjlab.terrains.TerrainGeneratorCfg attribute)</a>
@@ -892,10 +897,10 @@ document.write(`
 </li>
       <li><a href="source/api/envs.html#mjlab.envs.ManagerBasedRlEnvCfg.commands">commands (mjlab.envs.ManagerBasedRlEnvCfg attribute)</a>
 </li>
-      <li><a href="source/api/managers.html#mjlab.managers.CommandTerm">CommandTerm (class in mjlab.managers)</a>
-</li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="source/api/managers.html#mjlab.managers.CommandTerm">CommandTerm (class in mjlab.managers)</a>
+</li>
       <li><a href="source/api/managers.html#mjlab.managers.CommandTermCfg">CommandTermCfg (class in mjlab.managers)</a>
 </li>
       <li><a href="source/api/entity.html#mjlab.entity.Entity.compile">compile() (mjlab.entity.Entity method)</a>
@@ -1004,6 +1009,8 @@ document.write(`
 
       <ul>
         <li><a href="source/api/sensor.html#mjlab.sensor.RayCastSensorCfg.debug_vis">(mjlab.sensor.RayCastSensorCfg attribute)</a>
+</li>
+        <li><a href="source/api/terrains.html#mjlab.terrains.TerrainEntityCfg.debug_vis">(mjlab.terrains.TerrainEntityCfg attribute)</a>
 </li>
       </ul></li>
       <li><a href="source/api/managers.html#mjlab.managers.EventManager.debug_vis">debug_vis() (mjlab.managers.EventManager method)</a>
@@ -1968,6 +1975,8 @@ document.write(`
       </ul></li>
       <li><a href="source/api/managers.html#mjlab.managers.MetricsTermCfg.per_substep">per_substep (mjlab.managers.MetricsTermCfg attribute)</a>
 </li>
+      <li><a href="source/api/sim.html#mjlab.sim.Simulation.per_world_default_fields">per_world_default_fields (mjlab.sim.Simulation property)</a>
+</li>
       <li><a href="source/api/terrains.html#mjlab.terrains.HfPerlinNoiseTerrainCfg.persistence">persistence (mjlab.terrains.HfPerlinNoiseTerrainCfg attribute)</a>
 </li>
       <li><a href="source/api/envs.html#mjlab.envs.ManagerBasedRlEnv.physics_dt">physics_dt (mjlab.envs.ManagerBasedRlEnv property)</a>
@@ -2039,6 +2048,8 @@ document.write(`
       <li><a href="source/api/managers.html#mjlab.managers.ActionManager.prev_prev_action">prev_prev_action (mjlab.managers.ActionManager property)</a>
 </li>
       <li><a href="source/api/sensor.html#mjlab.sensor.ContactSensorCfg.primary">primary (mjlab.sensor.ContactSensorCfg attribute)</a>
+</li>
+      <li><a href="source/api/sensor.html#mjlab.sensor.ContactSensor.primary_names">primary_names (mjlab.sensor.ContactSensor property)</a>
 </li>
       <li><a href="source/api/actuator.html#mjlab.actuator.BuiltinActuatorGroup.process">process() (mjlab.actuator.BuiltinActuatorGroup static method)</a>
 </li>
@@ -2650,6 +2661,8 @@ document.write(`
       </ul></li>
       <li><a href="source/api/viewer.html#mjlab.viewer.ViewerConfig.OriginType.WORLD">WORLD (mjlab.viewer.ViewerConfig.OriginType attribute)</a>
 </li>
+      <li><a href="source/api/sim.html#mjlab.sim.Simulation.world_to_variant">world_to_variant (mjlab.sim.Simulation property)</a>
+</li>
       <li><a href="source/api/scene.html#mjlab.scene.Scene.write">write() (mjlab.scene.Scene method)</a>
 </li>
       <li><a href="source/api/entity.html#mjlab.entity.Entity.write_ctrl_to_sim">write_ctrl_to_sim() (mjlab.entity.Entity method)</a>
@@ -2758,7 +2771,7 @@ By The mjlab Developers
   
   <div class="footer-item">
     <p class="last-updated">
-  Last updated on Apr 09, 2026.
+  Last updated on May 19, 2026.
   <br/>
 </p>
   </div>
