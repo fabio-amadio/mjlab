@@ -18,7 +18,11 @@ _VISION_CNN_CFG = {
 _VISION_MODEL_CLS = "mjlab.rl.spatial_softmax:SpatialSoftmaxCNNModel"
 
 
-def yam_lift_cube_ppo_runner_cfg() -> RslRlOnPolicyRunnerCfg:
+def _yam_lift_cube_ppo_runner_cfg(
+  experiment_name: str,
+  max_iterations: int,
+  save_interval: int,
+) -> RslRlOnPolicyRunnerCfg:
   return RslRlOnPolicyRunnerCfg(
     actor=RslRlModelCfg(
       hidden_dims=(512, 256, 128),
@@ -49,10 +53,34 @@ def yam_lift_cube_ppo_runner_cfg() -> RslRlOnPolicyRunnerCfg:
       desired_kl=0.01,
       max_grad_norm=1.0,
     ),
-    experiment_name="yam_lift_cube",
-    save_interval=100,
+    experiment_name=experiment_name,
+    save_interval=save_interval,
     num_steps_per_env=24,
+    max_iterations=max_iterations,
+  )
+
+
+def yam_lift_cube_ppo_runner_cfg() -> RslRlOnPolicyRunnerCfg:
+  return _yam_lift_cube_ppo_runner_cfg(
+    experiment_name="yam_lift_cube",
     max_iterations=5_000,
+    save_interval=100,
+  )
+
+
+def yam_lift_cube_naive_ppo_runner_cfg() -> RslRlOnPolicyRunnerCfg:
+  return _yam_lift_cube_ppo_runner_cfg(
+    experiment_name="yam_lift_cube_naive",
+    max_iterations=5_000,
+    save_interval=250,
+  )
+
+
+def yam_lift_cube_dr_ppo_runner_cfg() -> RslRlOnPolicyRunnerCfg:
+  return _yam_lift_cube_ppo_runner_cfg(
+    experiment_name="yam_lift_cube_dr",
+    max_iterations=5_000,
+    save_interval=250,
   )
 
 

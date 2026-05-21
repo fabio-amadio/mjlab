@@ -89,6 +89,26 @@ def yam_lift_cube_env_cfg(
   return cfg
 
 
+def _remove_base_dr(cfg: ManagerBasedRlEnvCfg) -> None:
+  for event_name in (
+    "fingertip_friction_slide",
+    "fingertip_friction_spin",
+    "fingertip_friction_roll",
+  ):
+    cfg.events.pop(event_name, None)
+
+  cfg.observations["actor"].enable_corruption = False
+
+
+def yam_lift_cube_naive_env_cfg(
+  play: bool = False,
+) -> ManagerBasedRlEnvCfg:
+  """State-based cube lifting task without training-time domain randomization."""
+  cfg = yam_lift_cube_env_cfg(play=play)
+  _remove_base_dr(cfg)
+  return cfg
+
+
 def yam_lift_cube_vision_env_cfg(
   cam_type: Literal["rgb", "depth"],
   play: bool = False,
@@ -170,15 +190,8 @@ def yam_lift_cube_rgb_naive_env_cfg(
   """RGB cube lifting task without training-time domain randomization."""
   cfg = yam_lift_cube_vision_env_cfg(cam_type="rgb", play=play)
 
-  for event_name in (
-    "cube_color",
-    "fingertip_friction_slide",
-    "fingertip_friction_spin",
-    "fingertip_friction_roll",
-  ):
-    cfg.events.pop(event_name, None)
-
-  cfg.observations["actor"].enable_corruption = False
+  cfg.events.pop("cube_color", None)
+  _remove_base_dr(cfg)
 
   return cfg
 
@@ -223,11 +236,9 @@ def _showcase_dr_ranges() -> dict[str, Any]:
   }
 
 
-def _add_showcase_dr_events(cfg: ManagerBasedRlEnvCfg) -> None:
+def _add_showcase_object_dr_events(cfg: ManagerBasedRlEnvCfg) -> None:
   cube_geom_cfg = SceneEntityCfg("cube", geom_names=("cube_geom",))
   cube_body_cfg = SceneEntityCfg("cube", body_names=("cube",))
-  camera_cfg = SceneEntityCfg("robot", camera_names=("camera_d405",))
-  light_cfg = SceneEntityCfg("robot", light_names=("spotlight",))
 
   ranges = _showcase_dr_ranges()
 
@@ -249,6 +260,14 @@ def _add_showcase_dr_events(cfg: ManagerBasedRlEnvCfg) -> None:
       "alpha_range": ranges["cube_inertia"]["alpha_range"],
     },
   )
+
+
+def _add_showcase_visual_dr_events(cfg: ManagerBasedRlEnvCfg) -> None:
+  camera_cfg = SceneEntityCfg("robot", camera_names=("camera_d405",))
+  light_cfg = SceneEntityCfg("robot", light_names=("spotlight",))
+
+  ranges = _showcase_dr_ranges()
+
   cfg.events["camera_pos"] = EventTermCfg(
     func=dr.cam_pos,
     mode="reset",
@@ -300,6 +319,22 @@ def _add_showcase_dr_events(cfg: ManagerBasedRlEnvCfg) -> None:
       "ranges": ranges["light_dir"]["ranges"],
     },
   )
+
+
+def _add_showcase_dr_events(cfg: ManagerBasedRlEnvCfg) -> None:
+  _add_showcase_object_dr_events(cfg)
+  _add_showcase_visual_dr_events(cfg)
+
+
+def yam_lift_cube_dr_env_cfg(
+  play: bool = False,
+) -> ManagerBasedRlEnvCfg:
+  """State-based cube lifting task with fixed cube shape and inertia DR."""
+  cfg = yam_lift_cube_env_cfg(play=play)
+
+  _add_showcase_object_dr_events(cfg)
+
+  return cfg
 
 
 def yam_lift_cube_rgb_dr_env_cfg(
