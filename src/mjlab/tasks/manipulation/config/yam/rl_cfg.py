@@ -56,7 +56,11 @@ def yam_lift_cube_ppo_runner_cfg() -> RslRlOnPolicyRunnerCfg:
   )
 
 
-def yam_lift_cube_vision_ppo_runner_cfg() -> RslRlOnPolicyRunnerCfg:
+def _yam_lift_cube_vision_ppo_runner_cfg(
+  experiment_name: str,
+  max_iterations: int,
+  save_interval: int,
+) -> RslRlOnPolicyRunnerCfg:
   cnn_cfg = _VISION_CNN_CFG
   class_name = _VISION_MODEL_CLS
   return RslRlOnPolicyRunnerCfg(
@@ -93,14 +97,38 @@ def yam_lift_cube_vision_ppo_runner_cfg() -> RslRlOnPolicyRunnerCfg:
       desired_kl=0.01,
       max_grad_norm=1.0,
     ),
-    experiment_name="yam_lift_cube_vision",
-    save_interval=100,
+    experiment_name=experiment_name,
+    save_interval=save_interval,
     num_steps_per_env=24,
-    max_iterations=3_000,
+    max_iterations=max_iterations,
     obs_groups={
       "actor": ("actor", "camera"),
       "critic": ("critic", "camera"),
     },
+  )
+
+
+def yam_lift_cube_vision_ppo_runner_cfg() -> RslRlOnPolicyRunnerCfg:
+  return _yam_lift_cube_vision_ppo_runner_cfg(
+    experiment_name="yam_lift_cube_vision",
+    max_iterations=3_000,
+    save_interval=100,
+  )
+
+
+def yam_lift_cube_rgb_naive_ppo_runner_cfg() -> RslRlOnPolicyRunnerCfg:
+  return _yam_lift_cube_vision_ppo_runner_cfg(
+    experiment_name="yam_lift_cube_rgb_naive",
+    max_iterations=3_000,
+    save_interval=250,
+  )
+
+
+def yam_lift_cube_rgb_dr_ppo_runner_cfg() -> RslRlOnPolicyRunnerCfg:
+  return _yam_lift_cube_vision_ppo_runner_cfg(
+    experiment_name="yam_lift_cube_rgb_dr",
+    max_iterations=8_000,
+    save_interval=500,
   )
 
 

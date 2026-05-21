@@ -31,6 +31,11 @@ class TerminationCurriculumStage(_TerminationCurriculumStageOptional):
   step: int
 
 
+class EventParamCurriculumStage(TypedDict):
+  step: int
+  events: dict[str, dict[str, Any]]
+
+
 # Shared engine.  Stage dicts are passed directly from the public TypedDict
 # schemas.  Any key that isn't "step" or "params" is treated as a top-level
 # field on the target term config (e.g. "weight" on RewardTermCfg).
@@ -185,3 +190,81 @@ class termination_curriculum:
   ) -> dict[str, torch.Tensor]:
     del env_ids, termination_name, stages
     return _apply_stages(self._term_cfg, env.common_step_counter, self._stages)
+
+
+class event_param_curriculum:
+  """Update event term params based on training steps.
+
+  Each stage specifies a ``step`` threshold and an ``events`` mapping from event
+  name to parameter updates. When ``env.common_step_counter`` reaches a stage's
+  ``step``, the corresponding updates are applied to the resolved
+  :class:`EventTermCfg`. Later stages take precedence when multiple thresholds are
+  reached.
+
+  Example::
+
+    CurriculumTermCfg(
+      func=mdp.event_param_curriculum,
+      params={
+        "stages": [
+          {
+            "step": 0,
+            "events": {"cube_size": {"ranges": (0.02, 0.02)}},
+          },
+          {
+            "step": 100_000,
+            "events": {"cube_size": {"ranges": (0.015, 0.03)}},
+          },
+        ],
+      },
+    )
+  """
+
+  def __init__(self, cfg: CurriculumTermCfg, env: ManagerBasedRlEnv):
+    stages: list[EventParamCurriculumStage] = cfg.params["stages"]
+    self._term_cfgs = {
+      event_name: env.event_manager.get_term_cfg(event_name)
+      for stage in stages
+      for event_name in stage["events"]
+    }
+    self._stages = stages
+    self._validate_stages()
+
+  def _validate_stages(self) -> None:
+    for i in range(1, len(self._stages)):
+      if self._stages[i]["step"] < self._stages[i - 1]["step"]:
+        raise ValueError(
+          f"Curriculum stages must be in nondecreasing step order,"
+          f" but stage {i} has step"
+          f" {self._stages[i]['step']} < {self._stages[i - 1]['step']}."
+        )
+
+    for stage in self._stages:
+      for event_name, params in stage["events"].items():
+        term_cfg = self._term_cfgs[event_name]
+        unknown = params.keys() - term_cfg.params.keys()
+        if unknown:
+          raise KeyError(
+            f"Stage at step {stage['step']} sets unknown param(s)"
+            f" {unknown} on event term '{event_name}'. Check for typos."
+          )
+
+  def __call__(
+    self,
+    env: ManagerBasedRlEnv,
+    env_ids: torch.Tensor,
+    stages: list[EventParamCurriculumStage],
+  ) -> dict[str, torch.Tensor]:
+    del env_ids, stages
+    active_stage = -1
+    active_step = 0
+    for stage_idx, stage in enumerate(self._stages):
+      if env.common_step_counter >= stage["step"]:
+        active_stage = stage_idx
+        active_step = stage["step"]
+        for event_name, params in stage["events"].items():
+          self._term_cfgs[event_name].params.update(params)
+    return {
+      "stage": torch.tensor(active_stage),
+      "step": torch.tensor(active_step),
+    }
