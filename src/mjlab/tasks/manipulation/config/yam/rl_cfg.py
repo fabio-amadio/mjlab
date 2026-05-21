@@ -127,8 +127,8 @@ def yam_lift_cube_rgb_naive_ppo_runner_cfg() -> RslRlOnPolicyRunnerCfg:
 def yam_lift_cube_rgb_dr_ppo_runner_cfg() -> RslRlOnPolicyRunnerCfg:
   return _yam_lift_cube_vision_ppo_runner_cfg(
     experiment_name="yam_lift_cube_rgb_dr",
-    max_iterations=8_000,
-    save_interval=500,
+    max_iterations=4_000,
+    save_interval=250,
   )
 
 

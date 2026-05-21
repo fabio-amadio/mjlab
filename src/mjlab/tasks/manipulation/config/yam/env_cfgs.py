@@ -15,7 +15,6 @@ from mjlab.managers import (
   ObservationGroupCfg,
   ObservationTermCfg,
 )
-from mjlab.managers.curriculum_manager import CurriculumTermCfg
 from mjlab.managers.event_manager import EventTermCfg
 from mjlab.managers.reward_manager import RewardTermCfg
 from mjlab.managers.scene_entity_config import SceneEntityCfg
@@ -80,7 +79,6 @@ def yam_lift_cube_env_cfg(
 
   # Apply play mode overrides.
   if play:
-    cfg.episode_length_s = int(1e9)
     cfg.observations["actor"].enable_corruption = False
     cfg.curriculum = {}
 
@@ -185,161 +183,53 @@ def yam_lift_cube_rgb_naive_env_cfg(
   return cfg
 
 
-def _showcase_dr_stages() -> list[dict[str, Any]]:
-  stage_1_events = {
+def _showcase_dr_ranges() -> dict[str, Any]:
+  return {
     "cube_size": {
       "ranges": {
-        0: (0.02, 0.02),
-        1: (0.02, 0.02),
-        2: (0.02, 0.02),
+        0: (0.016, 0.027),
+        1: (0.016, 0.027),
+        2: (0.016, 0.027),
       }
     },
-    "cube_friction": {"ranges": (1.0, 1.0)},
-    "cube_inertia": {"alpha_range": (0.0, 0.0)},
+    "cube_inertia": {"alpha_range": (-0.25, 0.25)},
     "camera_pos": {
       "ranges": {
-        0: (0.0, 0.0),
-        1: (0.0, 0.0),
-        2: (0.0, 0.0),
+        0: (-0.006, 0.006),
+        1: (-0.006, 0.006),
+        2: (-0.004, 0.004),
       }
     },
     "camera_quat": {
-      "roll_range": (0.0, 0.0),
-      "pitch_range": (0.0, 0.0),
-      "yaw_range": (0.0, 0.0),
-    },
-    "camera_intrinsic": {"ranges": (1.0, 1.0)},
-    "light_pos": {
-      "ranges": {
-        0: (0.0, 0.0),
-        1: (0.0, 0.0),
-        2: (0.0, 0.0),
-      }
-    },
-    "light_dir": {
-      "ranges": {
-        0: (0.0, 0.0),
-        1: (0.0, 0.0),
-        2: (0.0, 0.0),
-      }
-    },
-    "pd_gains": {
-      "kp_range": (1.0, 1.0),
-      "kd_range": (1.0, 1.0),
-    },
-    "effort_limits": {"effort_limit_range": (1.0, 1.0)},
-    "joint_damping": {"ranges": (1.0, 1.0)},
-    "joint_friction": {"ranges": (0.0, 0.0)},
-    "encoder_bias": {"bias_range": (0.0, 0.0)},
-  }
-  stage_2_events = {
-    "cube_size": {
-      "ranges": {
-        0: (0.017, 0.026),
-        1: (0.014, 0.022),
-        2: (0.014, 0.024),
-      }
-    },
-    "cube_friction": {"ranges": (0.6, 1.4)},
-    "cube_inertia": {"alpha_range": (-0.15, 0.15)},
-    "camera_pos": {
-      "ranges": {
-        0: (-0.003, 0.003),
-        1: (-0.003, 0.003),
-        2: (-0.003, 0.003),
-      }
-    },
-    "camera_quat": {
-      "roll_range": (-0.015, 0.015),
-      "pitch_range": (-0.02, 0.02),
-      "yaw_range": (-0.02, 0.02),
-    },
-    "camera_intrinsic": {"ranges": (0.98, 1.02)},
-    "light_pos": {
-      "ranges": {
-        0: (-0.05, 0.05),
-        1: (-0.05, 0.05),
-        2: (-0.08, 0.08),
-      }
-    },
-    "light_dir": {
-      "ranges": {
-        0: (-0.1, 0.1),
-        1: (-0.1, 0.1),
-        2: (-0.1, 0.1),
-      }
-    },
-    "pd_gains": {
-      "kp_range": (0.9, 1.1),
-      "kd_range": (0.9, 1.1),
-    },
-    "effort_limits": {"effort_limit_range": (0.9, 1.1)},
-    "joint_damping": {"ranges": (0.9, 1.1)},
-    "joint_friction": {"ranges": (0.0, 0.01)},
-    "encoder_bias": {"bias_range": (-0.002, 0.002)},
-  }
-  stage_3_events = {
-    "cube_size": {
-      "ranges": {
-        0: (0.015, 0.030),
-        1: (0.010, 0.025),
-        2: (0.010, 0.0275),
-      }
-    },
-    "cube_friction": {"ranges": (0.25, 1.8)},
-    "cube_inertia": {"alpha_range": (-0.3, 0.3)},
-    "camera_pos": {
-      "ranges": {
-        0: (-0.008, 0.008),
-        1: (-0.008, 0.008),
-        2: (-0.006, 0.006),
-      }
-    },
-    "camera_quat": {
-      "roll_range": (-0.03, 0.03),
-      "pitch_range": (-0.04, 0.04),
-      "yaw_range": (-0.04, 0.04),
+      "roll_range": (-0.02, 0.02),
+      "pitch_range": (-0.03, 0.03),
+      "yaw_range": (-0.03, 0.03),
     },
     "camera_intrinsic": {"ranges": (0.95, 1.05)},
     "light_pos": {
       "ranges": {
-        0: (-0.15, 0.15),
-        1: (-0.15, 0.15),
-        2: (-0.20, 0.20),
+        0: (-0.10, 0.10),
+        1: (-0.12, 0.12),
+        2: (-0.15, 0.15),
       }
     },
     "light_dir": {
       "ranges": {
-        0: (-0.25, 0.25),
-        1: (-0.25, 0.25),
-        2: (-0.25, 0.25),
+        0: (-0.20, 0.20),
+        1: (-0.20, 0.20),
+        2: (-0.20, 0.20),
       }
     },
-    "pd_gains": {
-      "kp_range": (0.8, 1.2),
-      "kd_range": (0.8, 1.2),
-    },
-    "effort_limits": {"effort_limit_range": (0.85, 1.15)},
-    "joint_damping": {"ranges": (0.75, 1.25)},
-    "joint_friction": {"ranges": (0.0, 0.03)},
-    "encoder_bias": {"bias_range": (-0.006, 0.006)},
   }
-
-  return [
-    {"step": 0, "events": stage_1_events},
-    {"step": 50_000, "events": stage_2_events},
-    {"step": 100_000, "events": stage_3_events},
-  ]
 
 
 def _add_showcase_dr_events(cfg: ManagerBasedRlEnvCfg) -> None:
   cube_geom_cfg = SceneEntityCfg("cube", geom_names=("cube_geom",))
   cube_body_cfg = SceneEntityCfg("cube", body_names=("cube",))
-  robot_cfg = SceneEntityCfg("robot", joint_names=(".*",), actuator_names=".*")
   camera_cfg = SceneEntityCfg("robot", camera_names=("camera_d405",))
   light_cfg = SceneEntityCfg("robot", light_names=("spotlight",))
 
-  stage_1 = _showcase_dr_stages()[0]["events"]
+  ranges = _showcase_dr_ranges()
 
   cfg.events["cube_size"] = EventTermCfg(
     func=dr.geom_size,
@@ -348,18 +238,7 @@ def _add_showcase_dr_events(cfg: ManagerBasedRlEnvCfg) -> None:
       "asset_cfg": cube_geom_cfg,
       "operation": "abs",
       "distribution": "uniform",
-      "ranges": stage_1["cube_size"]["ranges"],
-    },
-  )
-  cfg.events["cube_friction"] = EventTermCfg(
-    func=dr.geom_friction,
-    mode="reset",
-    params={
-      "asset_cfg": cube_geom_cfg,
-      "operation": "scale",
-      "distribution": "uniform",
-      "ranges": stage_1["cube_friction"]["ranges"],
-      "shared_random": True,
+      "ranges": ranges["cube_size"]["ranges"],
     },
   )
   cfg.events["cube_inertia"] = EventTermCfg(
@@ -367,7 +246,7 @@ def _add_showcase_dr_events(cfg: ManagerBasedRlEnvCfg) -> None:
     mode="reset",
     params={
       "asset_cfg": cube_body_cfg,
-      "alpha_range": stage_1["cube_inertia"]["alpha_range"],
+      "alpha_range": ranges["cube_inertia"]["alpha_range"],
     },
   )
   cfg.events["camera_pos"] = EventTermCfg(
@@ -377,7 +256,7 @@ def _add_showcase_dr_events(cfg: ManagerBasedRlEnvCfg) -> None:
       "asset_cfg": camera_cfg,
       "operation": "add",
       "distribution": "uniform",
-      "ranges": stage_1["camera_pos"]["ranges"],
+      "ranges": ranges["camera_pos"]["ranges"],
     },
   )
   cfg.events["camera_quat"] = EventTermCfg(
@@ -385,9 +264,9 @@ def _add_showcase_dr_events(cfg: ManagerBasedRlEnvCfg) -> None:
     mode="reset",
     params={
       "asset_cfg": camera_cfg,
-      "roll_range": stage_1["camera_quat"]["roll_range"],
-      "pitch_range": stage_1["camera_quat"]["pitch_range"],
-      "yaw_range": stage_1["camera_quat"]["yaw_range"],
+      "roll_range": ranges["camera_quat"]["roll_range"],
+      "pitch_range": ranges["camera_quat"]["pitch_range"],
+      "yaw_range": ranges["camera_quat"]["yaw_range"],
     },
   )
   cfg.events["camera_intrinsic"] = EventTermCfg(
@@ -398,7 +277,7 @@ def _add_showcase_dr_events(cfg: ManagerBasedRlEnvCfg) -> None:
       "operation": "scale",
       "distribution": "uniform",
       "axes": [0, 1],
-      "ranges": stage_1["camera_intrinsic"]["ranges"],
+      "ranges": ranges["camera_intrinsic"]["ranges"],
     },
   )
   cfg.events["light_pos"] = EventTermCfg(
@@ -408,7 +287,7 @@ def _add_showcase_dr_events(cfg: ManagerBasedRlEnvCfg) -> None:
       "asset_cfg": light_cfg,
       "operation": "add",
       "distribution": "uniform",
-      "ranges": stage_1["light_pos"]["ranges"],
+      "ranges": ranges["light_pos"]["ranges"],
     },
   )
   cfg.events["light_dir"] = EventTermCfg(
@@ -418,56 +297,7 @@ def _add_showcase_dr_events(cfg: ManagerBasedRlEnvCfg) -> None:
       "asset_cfg": light_cfg,
       "operation": "add",
       "distribution": "uniform",
-      "ranges": stage_1["light_dir"]["ranges"],
-    },
-  )
-  cfg.events["pd_gains"] = EventTermCfg(
-    func=dr.pd_gains,
-    mode="reset",
-    params={
-      "asset_cfg": robot_cfg,
-      "operation": "scale",
-      "distribution": "uniform",
-      "kp_range": stage_1["pd_gains"]["kp_range"],
-      "kd_range": stage_1["pd_gains"]["kd_range"],
-    },
-  )
-  cfg.events["effort_limits"] = EventTermCfg(
-    func=dr.effort_limits,
-    mode="reset",
-    params={
-      "asset_cfg": robot_cfg,
-      "operation": "scale",
-      "distribution": "uniform",
-      "effort_limit_range": stage_1["effort_limits"]["effort_limit_range"],
-    },
-  )
-  cfg.events["joint_damping"] = EventTermCfg(
-    func=dr.joint_damping,
-    mode="reset",
-    params={
-      "asset_cfg": robot_cfg,
-      "operation": "scale",
-      "distribution": "uniform",
-      "ranges": stage_1["joint_damping"]["ranges"],
-    },
-  )
-  cfg.events["joint_friction"] = EventTermCfg(
-    func=dr.joint_friction,
-    mode="reset",
-    params={
-      "asset_cfg": robot_cfg,
-      "operation": "add",
-      "distribution": "uniform",
-      "ranges": stage_1["joint_friction"]["ranges"],
-    },
-  )
-  cfg.events["encoder_bias"] = EventTermCfg(
-    func=dr.encoder_bias,
-    mode="reset",
-    params={
-      "asset_cfg": robot_cfg,
-      "bias_range": stage_1["encoder_bias"]["bias_range"],
+      "ranges": ranges["light_dir"]["ranges"],
     },
   )
 
@@ -475,15 +305,10 @@ def _add_showcase_dr_events(cfg: ManagerBasedRlEnvCfg) -> None:
 def yam_lift_cube_rgb_dr_env_cfg(
   play: bool = False,
 ) -> ManagerBasedRlEnvCfg:
-  """RGB cube lifting task with staged physical and visual DR."""
+  """RGB cube lifting task with fixed object, camera, and light DR."""
   cfg = yam_lift_cube_vision_env_cfg(cam_type="rgb", play=play)
 
   _add_showcase_dr_events(cfg)
-  if not play:
-    cfg.curriculum["showcase_dr"] = CurriculumTermCfg(
-      func=manipulation_mdp.event_param_curriculum,
-      params={"stages": _showcase_dr_stages()},
-    )
 
   return cfg
 
